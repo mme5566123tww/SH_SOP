@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>簡易收銀台</title>
+<style>
+  :root{
+    --paper:#EDF1F1;
+    --card:#FFFFFF;
+    --ink:#1D2B2E;
+    --ink-soft:#5B6B67;
+    --accent:#1F7A5C;
+    --accent-dark:#155940;
+    --gold:#C9A227;
+    --brick:#A8402E;
+    --line:#D3DAD6;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+    --disp: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--disp);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:720px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  header{
+    padding:18px 16px 12px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+  }
+  header h1{
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    margin:0;
+  }
+  header .clock{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--ink-soft);
+    text-align:right;
+  }
+  .sync-status{
+    font-size:11px;
+    text-align:right;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .sync-status.online{ color:var(--accent-dark); font-weight:700; }
+  .sync-status.offline{ color:var(--brick); font-weight:700; }
+  nav.tabs{
+    display:flex;
+    gap:5px;
+    padding:0 16px 12px;
+  }
+  nav.tabs button{
+    flex:1;
+    padding:9px 4px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink-soft);
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.02em;
+    border-radius:8px;
+    cursor:pointer;
+    transition:transform .08s ease, background .15s ease, color .15s ease;
+  }
+  nav.tabs button.active{
+    background:var(--ink);
+    color:#fff;
+    border-color:var(--ink);
+  }
+  nav.tabs button:active{ transform:scale(0.96); }
+
+  main{ flex:1; padding:0 16px 40px; }
+  .tabpanel{ display:none; }
+  .tabpanel.active{ display:block; }
+
+  .section-title{
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin:18px 0 8px;
+  }
+  .section-title.highlight-title{
+    font-size:20px;
+    font-weight:800;
+    text-transform:none;
+    letter-spacing:normal;
+    color:var(--gold);
+  }
+  .section-divider{
+    border-top:2px solid var(--ink);
+    margin:14px 0;
+  }
+
+  /* category chips (cashier tab) */
+  .cat-chip-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .cat-chip{
+    flex:0 0 auto;
+    padding:8px 14px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s ease, color .15s ease;
+  }
+  .cat-chip.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+
+  /* item grid (cashier tab) */
+  .item-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin-top:10px;
+  }
+  .item-btn{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 10px;
+    text-align:left;
+    cursor:pointer;
+    transition:transform .08s ease, border-color .15s ease;
+  }
+  .item-btn:active{ transform:scale(0.96); border-color:var(--accent); }
+  .item-btn .name{ font-weight:700; font-size:14px; display:block; margin-bottom:4px; }
+  .item-btn .price{ font-family:var(--mono); font-size:13px; color:var(--accent-dark); }
+  .empty-hint{
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:16px 4px;
+    line-height:1.6;
+  }
+
+  /* receipt / cart */
+  .receipt{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-top:3px dashed var(--line);
+    border-radius:10px 10px 0 0;
+    padding:14px 16px 18px;
+    margin-top:8px;
+  }
+  .receipt::after{
+    content:"";
+    display:block;
+    height:12px;
+    margin:12px -16px -18px;
+    background-image:
+      linear-gradient(-45deg, var(--paper) 6px, transparent 0),
+      linear-gradient(45deg, var(--paper) 6px, transparent 0);
+    background-position:left bottom;
+    background-size:12px 12px;
+    background-repeat:repeat-x;
+  }
+  .cart-line{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:6px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .cart-line:last-of-type{ border-bottom:none; }
+  .cart-line .cl-name{ flex:1; font-family:var(--disp); font-weight:600; font-size:14px; }
+  .qty-ctrl{ display:flex; align-items:center; gap:4px; }
+  .qty-ctrl button{
+    width:24px; height:24px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    border-radius:6px;
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .cl-sub{ width:60px; text-align:right; }
+  .cl-remove{
+    color:var(--brick);
+    cursor:pointer;
+    font-size:15px;
+    padding:0 2px;
+  }
+  .cart-empty{ color:var(--ink-soft); font-size:13px; padding:8px 0; }
+
+  textarea#noteInput{
+    width:100%;
+    resize:vertical;
+    min-height:44px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:var(--disp);
+    font-size:13px;
+    margin-top:10px;
+    background:var(--card);
+  }
+
+  .option-row{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+  .option-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .option-row input[type="checkbox"]{
+    width:17px; height:17px;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+  .discount-row input[type="number"]{
+    width:110px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .discount-row input[type="number"]:disabled{
+    background:var(--paper);
+    color:var(--ink-soft);
+  }
+  #tabExtra{
+    margin-top:8px;
+    padding:10px 12px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  #deliveryExtra{ margin-top:6px; }
+  .sub-field-row{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
+  .sub-field-row input{
+    flex:1;
+    min-width:120px;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:13px;
+  }
+  .sub-field-row input[type="number"]{
+    flex:0 0 110px;
+    font-family:var(--mono);
+  }
+  .sub-field-row input:disabled{
+    background:var(--card);
+    color:var(--ink-soft);
+  }
+  .field-toggle-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+  }
+  .field-toggle-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+    flex:0 0 auto;
+  }
+  .field-toggle-row input[type="checkbox"]{
+    width:17px; height:17px;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+  .field-toggle-row input[type="text"]{
+    flex:1;
+    min-width:0;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:13px;
+  }
+  .field-toggle-row input[type="text"]:disabled{
+    background:var(--card);
+    color:var(--ink-soft);
+  }
+  .deposit-row input[type="number"]:disabled{
+    background:var(--paper);
+    color:var(--ink-soft);
+  }
+  .deposit-row input[type="checkbox"]:disabled{
+    cursor:not-allowed;
+    opacity:0.4;
+  }
+  .deposit-row label:has(input:disabled){
+    color:var(--ink-soft);
+  }
+  .pay-method-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+  }
+  .pay-method-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+    flex:0 0 auto;
+    width:64px;
+  }
+  .pay-method-row input[type="checkbox"]{
+    width:17px; height:17px;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+  .pay-method-row input[type="checkbox"]:disabled{
+    cursor:not-allowed;
+    opacity:0.4;
+  }
+  .pay-method-row label:has(input:disabled){
+    color:var(--ink-soft);
+  }
+  .pay-method-row input[type="number"]{
+    flex:1;
+    min-width:0;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .pay-method-row input[type="number"]:disabled{
+    background:var(--paper);
+    color:var(--ink-soft);
+  }
+
+  .totals{
+    margin-top:14px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:var(--mono);
+    gap:10px;
+  }
+  .total-row.sub span{ color:var(--ink-soft); font-size:13px; }
+  .total-row.grand{
+    font-size:20px;
+    font-weight:800;
+    color:var(--gold);
+    padding-top:6px;
+    border-top:2px solid var(--ink);
+  }
+  .total-row span.label-text{ font-family:var(--disp); }
+  .total-row input{
+    width:120px;
+    text-align:right;
+    font-family:var(--mono);
+    font-size:15px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:6px;
+  }
+  .cash-hint{
+    font-family:var(--disp);
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:-4px;
+  }
+  .pill{ font-family:var(--mono); font-weight:700; }
+  .pill.unpaid{ color:var(--brick); }
+  .pill.change{ color:var(--accent-dark); }
+  .pill.zero{ color:var(--ink-soft); }
+
+  .actions{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+  }
+  button.primary{
+    flex:1;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:14px;
+    border-radius:9px;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition:transform .08s ease, background .15s ease;
+  }
+  button.primary:disabled{ background:#B7C4BF; cursor:not-allowed; }
+  button.primary:active:not(:disabled){ transform:scale(0.98); background:var(--accent-dark); }
+  button.ghost{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:14px 16px;
+    border-radius:9px;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* item settings tab */
+  .item-form{
+    display:flex;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+  }
+  .item-form input{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:14px;
+    min-width:0;
+  }
+  .item-form input[name="iname"], .item-form input#newCatName{ flex:1; }
+  .item-form input[name="iprice"]{ width:90px; font-family:var(--mono); }
+  .item-form button{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  .cat-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    margin-top:10px;
+  }
+  .cat-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .cat-toggle{
+    flex:0 0 auto;
+    width:20px;
+    text-align:center;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-size:13px;
+    user-select:none;
+  }
+  .cat-header input.cat-name{
+    flex:1;
+    min-width:0;
+    font-weight:800;
+    font-size:15px;
+    border:1px solid transparent;
+    padding:6px 8px;
+    border-radius:6px;
+    background:transparent;
+  }
+  .cat-header input.cat-name:focus{ border-color:var(--line); background:var(--paper); }
+  .cat-header .save-btn{ font-size:12px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .cat-header .del-btn{ font-size:12px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+
+  .cat-item-form{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .cat-item-form input[name="iname"]{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:13px; }
+  .cat-item-form input[name="iprice"]{ width:80px; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:13px; font-family:var(--mono); }
+  .cat-item-form button{ background:var(--accent); color:#fff; border:none; border-radius:6px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+  .item-container{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-top:8px;
+  }
+  .item-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .item-row input[name="ename"]{ flex:1; min-width:0; border:1px solid transparent; padding:6px 8px; border-radius:6px; font-size:13px; background:transparent; }
+  .item-row input[name="eprice"]{ width:75px; border:1px solid transparent; padding:6px 8px; border-radius:6px; font-family:var(--mono); background:transparent; text-align:right; font-size:13px; }
+  .item-row input:focus{ border-color:var(--line); background:#fff; }
+  .item-row .save-btn{ font-size:11px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .item-row .del-btn{ font-size:11px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+
+  .split-toggle-label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-top:6px;
+    cursor:pointer;
+  }
+  .split-toggle-label input[type="checkbox"]{
+    width:15px; height:15px;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+  .split-block{ margin-top:6px; }
+  .split-item-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:6px;
+  }
+  .split-item-row input.split-name{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; background:#fff; }
+  .split-item-row input.split-price{ width:70px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; font-family:var(--mono); background:#fff; }
+  .split-del{ color:var(--brick); cursor:pointer; font-size:13px; padding:0 2px; }
+  .add-split-btn{
+    margin-top:6px;
+    background:transparent;
+    border:1px dashed var(--line);
+    color:var(--accent-dark);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  /* history tab */
+  .stats-bar{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 10px;
+    text-align:center;
+  }
+  .stat .label{ font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; }
+  .stat .value{ font-family:var(--mono); font-size:17px; font-weight:800; margin-top:4px; }
+  .stat.unpaid .value{ color:var(--brick); }
+  .stat.sales .value{ color:var(--accent-dark); }
+
+  .order-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .order-card .oc-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .order-card .oc-total{ font-size:17px; font-weight:800; color:var(--gold); font-family:var(--mono); margin-top:4px; }
+  .order-card .oc-items{ font-size:13px; color:var(--ink); margin-top:6px; line-height:1.5; }
+  .order-card .oc-note{ font-size:12px; color:var(--ink-soft); margin-top:4px; font-style:italic; }
+  .geo-link{ color:var(--accent-dark); text-decoration:underline; font-style:normal; }
+  .order-card .oc-badges{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .oc-badge{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:10px;
+    background:var(--paper);
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+  }
+  .order-card .oc-pay{ display:flex; gap:14px; margin-top:8px; font-family:var(--mono); font-size:12px; }
+  .order-card .oc-buttons{ display:flex; gap:8px; margin-top:8px; }
+  .collect-btn{
+    background:var(--brick);
+    color:#fff;
+    border:none;
+    padding:7px 12px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .delete-order-btn{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:7px 12px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .history-empty{ color:var(--ink-soft); font-size:13px; padding:16px 4px; }
+  .history-search{
+    width:100%;
+    padding:10px 14px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    background:var(--card);
+    margin:14px 0 4px;
+  }
+  .history-search:focus{ border-color:var(--accent); outline:none; }
+
+  /* 今日結帳 */
+  .daily-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:6px;
+  }
+  .daily-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .daily-row:last-child{ border-bottom:none; }
+  .daily-row .dr-label{ font-weight:600; }
+  .daily-row .dr-value{ font-family:var(--mono); font-weight:700; }
+  .daily-row.total .dr-value{ color:var(--gold); font-size:15px; }
+  .daily-row.unpaid .dr-value{ color:var(--brick); }
+  .daily-row.income .dr-value{ color:var(--accent-dark); font-size:16px; }
+  .month-group{ margin-top:18px; }
+  .month-group:first-child{ margin-top:0; }
+  .month-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:800;
+    color:var(--ink);
+    padding:6px 4px 8px;
+    border-bottom:2px solid var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .month-header .month-toggle{
+    flex:0 0 auto;
+    width:16px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .month-header .month-label{ flex:1; }
+  .month-header .month-meta{
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+  }
+  .month-body{ padding-left:2px; }
+  .day-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin:14px 0 8px;
+    padding-bottom:4px;
+    border-bottom:1px dashed var(--line);
+    cursor:pointer;
+    user-select:none;
+  }
+  .day-header .day-toggle{
+    flex:0 0 auto;
+    width:14px;
+    font-size:11px;
+  }
+  .day-header .day-label{ flex:1; color:var(--ink); }
+  .day-header .day-meta{
+    font-family:var(--mono);
+    font-size:11px;
+  }
+  .day-body{ padding-left:6px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>簡易收銀台</h1>
+    <div>
+      <div class="clock" id="clock"></div>
+      <div class="sync-status" id="syncStatus">連線中...</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="cashier" class="active">收銀</button>
+    <button data-tab="items">品項設定</button>
+    <button data-tab="history">訂單紀錄</button>
+    <button data-tab="daily">今日結帳</button>
+  </nav>
+
+  <main>
+    <!-- 收銀 -->
+    <section class="tabpanel active" id="tab-cashier">
+      <div class="section-title">選擇大類別</div>
+      <div class="cat-chip-row" id="catChipRow"></div>
+
+      <div class="section-title">點選細項加入訂單</div>
+      <div class="item-grid" id="itemGrid"></div>
+
+      <div class="receipt">
+        <div class="section-title highlight-title" style="margin-top:0;">目前訂單</div>
+        <div id="cartList"></div>
+
+        <textarea id="noteInput" placeholder="訂單備註（例如：特殊要求、是否需要提前電話聯繫...等等）"></textarea>
+
+        <div class="option-row">
+          <label><input type="checkbox" id="optTab"> 開單</label>
+          <label><input type="checkbox" id="optInvoice"> 發票</label>
+        </div>
+
+        <div id="tabExtra" style="display:none;">
+          <div class="option-row">
+            <label><input type="checkbox" id="optDelivery"> 送貨</label>
+            <label><input type="checkbox" id="optPickup"> 自取</label>
+          </div>
+
+          <div id="deliveryExtra" style="display:none;">
+            <div class="option-row">
+              <label><input type="checkbox" id="optCleanup"> 清運</label>
+            </div>
+            <div class="sub-field-row">
+              <input type="number" id="cleanupAmount" placeholder="清運金額" inputmode="decimal" disabled>
+              <input type="text" id="cleanupItems" placeholder="回收品項（例如：舊沙發一組）" disabled>
+            </div>
+
+            <div class="field-toggle-row">
+              <label><input type="checkbox" id="optRecipient"> 收件人</label>
+              <input type="text" id="recipientInput" placeholder="收件人姓名" disabled>
+            </div>
+            <div class="field-toggle-row">
+              <label><input type="checkbox" id="optAddress"> 地址</label>
+              <input type="text" id="addressInput" placeholder="送貨地址" disabled>
+            </div>
+            <div class="field-toggle-row">
+              <label><input type="checkbox" id="optPhone"> 連絡電話</label>
+              <input type="text" id="phoneInput" placeholder="連絡電話" disabled>
+            </div>
+            <div class="field-toggle-row">
+              <label><input type="checkbox" id="optGeo"> Google定位</label>
+              <input type="text" id="geoInput" placeholder="Google 地圖連結或定位座標" disabled>
+            </div>
+          </div>
+
+          <div class="option-row">
+            <label><input type="checkbox" id="optMoving"> 搬運費</label>
+          </div>
+          <div class="sub-field-row" id="movingFieldsRow" style="display:none;">
+            <input type="number" id="movingAmount" placeholder="搬運費金額" inputmode="decimal" disabled>
+            <input type="text" id="movingAddress" placeholder="搬運地址" disabled>
+          </div>
+        </div>
+
+        <div id="invoiceExtra" style="display:none;">
+          <div class="sub-field-row">
+            <input type="text" id="buyerInput" placeholder="買受人">
+            <input type="text" id="taxIdInput" placeholder="統一編號">
+          </div>
+          <div class="sub-field-row">
+            <input type="number" id="taxInput" placeholder="稅金金額" inputmode="decimal">
+          </div>
+        </div>
+
+        <div class="option-row discount-row">
+          <label><input type="checkbox" id="optDiscount"> 折扣</label>
+          <input type="number" id="discountInput" placeholder="折扣金額" inputmode="decimal" disabled>
+        </div>
+
+        <div class="totals">
+          <div class="total-row sub" id="subtotalRow" style="display:none;">
+            <span class="label-text">小計</span>
+            <span id="subtotalDisplay">$0</span>
+          </div>
+          <div class="total-row sub" id="discountRow" style="display:none;">
+            <span class="label-text">折扣</span>
+            <span id="discountDisplay">-$0</span>
+          </div>
+          <div class="total-row sub" id="cleanupTotalRow" style="display:none;">
+            <span class="label-text">清運金額</span>
+            <span id="cleanupTotalDisplay">$0</span>
+          </div>
+          <div class="total-row sub" id="movingTotalRow" style="display:none;">
+            <span class="label-text">搬運費</span>
+            <span id="movingTotalDisplay">$0</span>
+          </div>
+          <div class="total-row sub" id="taxTotalRow" style="display:none;">
+            <span class="label-text">稅金</span>
+            <span id="taxTotalDisplay">$0</span>
+          </div>
+          <div class="total-row grand">
+            <span class="label-text">總金額</span>
+            <span id="totalDisplay">$0</span>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <div class="section-title highlight-title">付款方式</div>
+
+          <div class="option-row deposit-row">
+            <label><input type="checkbox" id="optDeposit"> 訂金</label>
+          </div>
+          <div id="depositFields" style="display:none;">
+            <div class="pay-method-row">
+              <label><input type="checkbox" id="optDepositCash"> 現金</label>
+              <input type="number" id="depositCashAmount" placeholder="金額" inputmode="decimal" disabled>
+            </div>
+            <div class="pay-method-row">
+              <label><input type="checkbox" id="optDepositTransfer"> 匯款</label>
+              <input type="number" id="depositTransferAmount" placeholder="金額" inputmode="decimal" disabled>
+            </div>
+          </div>
+          <div class="total-row sub" id="balanceRow" style="display:none;">
+            <span class="label-text">應收餘額</span>
+            <span id="balanceDisplay">$0</span>
+          </div>
+          <div class="option-row">
+            <label><input type="checkbox" id="optSettleNow"> 現場結清</label>
+          </div>
+          <div id="settleFields" style="display:none;">
+            <div class="pay-method-row">
+              <label><input type="checkbox" id="optCash"> 現金</label>
+              <input type="number" id="cashAmountInput" placeholder="金額" inputmode="decimal" disabled>
+            </div>
+            <div class="pay-method-row">
+              <label><input type="checkbox" id="optTransfer"> 匯款</label>
+              <input type="number" id="transferAmountInput" placeholder="金額" inputmode="decimal" disabled>
+            </div>
+          </div>
+          <div class="cash-hint" id="cashHint">勾選付款方式後會自動帶入應收金額；如需分開填寫或有尾款/找零情況可自行調整</div>
+          <div class="total-row">
+            <span class="label-text" id="payLabel">尾款 / 找零</span>
+            <span class="pill zero" id="payDisplay">—</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="ghost" id="clearBtn">清空</button>
+          <button class="primary" id="checkoutBtn" disabled>完成結帳</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 品項設定 -->
+    <section class="tabpanel" id="tab-items">
+      <div class="section-title">新增大類別</div>
+      <div class="item-form">
+        <input type="text" id="newCatName" placeholder="類別名稱（例如：桌子、沙發）">
+        <button id="addCatBtn">新增類別</button>
+      </div>
+
+      <div class="section-title">類別與細項（可直接修改後按儲存）</div>
+      <div id="categoryList"></div>
+    </section>
+
+    <!-- 訂單紀錄 -->
+    <section class="tabpanel" id="tab-history">
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="label">今日訂單</div>
+          <div class="value" id="statCount">0</div>
+        </div>
+        <div class="stat sales">
+          <div class="label">今日營業額</div>
+          <div class="value" id="statSales">$0</div>
+        </div>
+        <div class="stat unpaid">
+          <div class="label">今日未收</div>
+          <div class="value" id="statUnpaid">$0</div>
+        </div>
+      </div>
+      <input type="text" id="historySearch" class="history-search" placeholder="搜尋客人姓名、地址或商品名稱...">
+      <div id="historyList"></div>
+    </section>
+
+    <!-- 今日結帳 -->
+    <section class="tabpanel" id="tab-daily">
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="label">今日訂單</div>
+          <div class="value" id="dailyStatCount">0</div>
+        </div>
+        <div class="stat sales">
+          <div class="label">今日總收入</div>
+          <div class="value" id="dailyStatIncome">$0</div>
+        </div>
+        <div class="stat unpaid">
+          <div class="label">未收尾款</div>
+          <div class="value" id="dailyStatUnpaid">$0</div>
+        </div>
+      </div>
+
+      <div class="section-title highlight-title">今日售出品項</div>
+      <div id="dailyItemsList"></div>
+
+      <div class="section-title highlight-title">收款方式明細</div>
+      <div id="dailyPaymentList"></div>
+
+      <div class="section-title highlight-title">今日總計</div>
+      <div id="dailyTotalsList"></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+(function(){
+  let categories = [];   // {id, name}
+  let items = [];        // {id, name, price, categoryId}
+  let orders = [];        // completed orders
+  let cart = [];          // {itemId, name, price, qty}
+  let activeCategoryId = null;
+  let cashEdited = false;
+  let transferEdited = false;
+  let collapsedCats = new Set();      // 品項設定：收起的類別細項清單
+  let collapsedMonths = new Set();    // 訂單紀錄：收起的月份
+  let collapsedDays = new Set();      // 訂單紀錄：收起的日期
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  function fmt(n){
+    n = Math.round((n + Number.EPSILON) * 100) / 100;
+    return '$' + n.toLocaleString('zh-Hant-TW');
+  }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- storage (works inside Claude artifacts via window.storage,
+  // falls back to localStorage so data also persists when this file is
+  // opened directly / saved on your own device) ----------
+  async function storageGet(key){
+    try{
+      if(window.storage && typeof window.storage.get === 'function'){
+        const r = await window.storage.get(key);
+        return r ? r.value : null;
+      }
+    }catch(e){ /* fall through to localStorage */ }
+    try{ return localStorage.getItem('pos_'+key); }catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    try{
+      if(window.storage && typeof window.storage.set === 'function'){
+        await window.storage.set(key, value, false);
+        return;
+      }
+    }catch(e){ /* fall through */ }
+    try{ localStorage.setItem('pos_'+key, value); }catch(e){ /* ignore */ }
+  }
+
+  async function loadAll(){
+    try{ const v = await storageGet('categories'); categories = v ? JSON.parse(v) : []; }
+    catch(e){ categories = []; }
+    try{ const v = await storageGet('items'); items = v ? JSON.parse(v) : []; }
+    catch(e){ items = []; }
+    try{ const v = await storageGet('orders'); orders = v ? JSON.parse(v) : []; }
+    catch(e){ orders = []; }
+  }
+  async function saveCategories(){
+    await storageSet('categories', JSON.stringify(categories));
+    if(fbReady){
+      try{ await catalogRef().set({ categories }, { merge:true }); }catch(e){ /* 離線時自動排隊，恢復連線後補送 */ }
+    }
+  }
+  async function saveItems(){
+    await storageSet('items', JSON.stringify(items));
+    if(fbReady){
+      try{ await catalogRef().set({ items }, { merge:true }); }catch(e){ /* 離線時自動排隊，恢復連線後補送 */ }
+    }
+  }
+  async function saveOrders(){ await storageSet('orders', JSON.stringify(orders)); }
+
+  // ---------- Firebase（多裝置即時同步） ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpv9oJ1Paj57YzxrVppIjqG5kldp8ubcQ",
+    authDomain: "shpos-d25d7.firebaseapp.com",
+    projectId: "shpos-d25d7",
+    storageBucket: "shpos-d25d7.firebasestorage.app",
+    messagingSenderId: "493428834263",
+    appId: "1:493428834263:web:0f10c8c505c0c2375c1592",
+    measurementId: "G-M5VB8ZM70W"
+  };
+
+  let fbDb = null;
+  let fbReady = false;
+
+  function setSyncStatus(text, cls){
+    const el = $('#syncStatus');
+    if(!el) return;
+    el.textContent = text;
+    el.className = 'sync-status' + (cls ? ' ' + cls : '');
+  }
+
+  function catalogRef(){ return fbDb.doc('shops/main/meta/catalog'); }
+  function ordersCollRef(){ return fbDb.collection('shops/main/orders'); }
+  function orderRef(id){ return fbDb.doc('shops/main/orders/' + id); }
+
+  function timeoutReject(ms, msg){
+    return new Promise((_, reject)=> setTimeout(()=> reject(new Error(msg || 'timeout')), ms));
+  }
+
+  async function initFirebase(){
+    try{
+      if(typeof firebase === 'undefined'){ throw new Error('firebase sdk not loaded'); }
+      const app = firebase.initializeApp(firebaseConfig);
+      fbDb = firebase.firestore(app);
+      // 注意：不啟用 enablePersistence()，因為部分行動瀏覽器（尤其 iOS Safari）
+      // 在以本機檔案（file://）開啟時，這個功能容易卡住不回應，導致整個連線流程卡死。
+      const auth = firebase.auth(app);
+      const authPromise = new Promise((resolve, reject)=>{
+        const unsub = auth.onAuthStateChanged(user=>{
+          if(user){ unsub(); resolve(); }
+        }, reject);
+        auth.signInAnonymously().catch(reject);
+      });
+      // 最多等 8 秒，避免在連線環境不佳或瀏覽器限制下永久卡住
+      await Promise.race([authPromise, timeoutReject(8000, 'auth timeout')]);
+      fbReady = true;
+      setSyncStatus('☁ 已連線，多裝置同步中', 'online');
+    }catch(e){
+      fbReady = false;
+      const detail = (e && (e.code || e.message)) ? (e.code || e.message) : 'unknown error';
+      setSyncStatus('⚠ 無法連線雲端（' + detail + '）', 'offline');
+    }
+  }
+
+  function subscribeCatalog(){
+    if(!fbReady) return;
+    catalogRef().onSnapshot(snap=>{
+      if(!snap.exists) return;
+      const data = snap.data();
+      let changed = false;
+      if(Array.isArray(data.categories) && JSON.stringify(data.categories) !== JSON.stringify(categories)){
+        categories = data.categories; changed = true;
+      }
+      if(Array.isArray(data.items) && JSON.stringify(data.items) !== JSON.stringify(items)){
+        items = data.items; changed = true;
+      }
+      if(changed){
+        storageSet('categories', JSON.stringify(categories));
+        storageSet('items', JSON.stringify(items));
+        if(categories.length && !categories.find(c=>c.id===activeCategoryId)) activeCategoryId = categories[0].id;
+        renderCategoryChips(); renderItemGrid(); renderCategorySettings(); renderCart();
+      }
+    }, ()=>{ /* 忽略監聽錯誤，本機資料仍可運作 */ });
+  }
+
+  function subscribeOrders(){
+    if(!fbReady) return;
+    ordersCollRef().onSnapshot(snap=>{
+      const list = [];
+      snap.forEach(d=> list.push(d.data()));
+      list.sort((a,b)=> new Date(b.time) - new Date(a.time));
+      orders = list;
+      storageSet('orders', JSON.stringify(orders));
+      renderCart();
+      renderHistory();
+      renderDaily();
+    }, ()=>{ /* 忽略監聽錯誤 */ });
+  }
+
+  async function fsSetOrder(order){
+    if(!fbReady) return;
+    try{ await orderRef(order.id).set(order); }catch(e){ /* 離線時 Firestore 會自動排隊，恢復連線後補送 */ }
+  }
+  async function fsDeleteOrder(id){
+    if(!fbReady) return;
+    try{ await orderRef(id).delete(); }catch(e){ /* 忽略 */ }
+  }
+
+  // ---------- toast ----------
+  let toastTimer;
+  function toast(msg){
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> el.classList.remove('show'), 1800);
+  }
+
+  // ---------- tabs ----------
+  $$('.tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      $$('.tabpanel').forEach(p=>p.classList.remove('active'));
+      $('#tab-' + btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'history') renderHistory();
+      if(btn.dataset.tab === 'daily') renderDaily();
+    });
+  });
+
+  $('#historySearch').addEventListener('input', ()=>{
+    renderHistory();
+  });
+
+  // ---------- clock ----------
+  function tickClock(){
+    const d = new Date();
+    $('#clock').textContent = d.toLocaleDateString('zh-Hant-TW') + ' ' + d.toLocaleTimeString('zh-Hant-TW', {hour:'2-digit', minute:'2-digit'});
+  }
+  tickClock();
+  setInterval(tickClock, 30000);
+
+  // ================= 品項設定：大類別 + 細項 =================
+  function renderCategorySettings(){
+    const list = $('#categoryList');
+    if(categories.length === 0){
+      list.innerHTML = '<div class="empty-hint">還沒有任何類別，請先在上方新增一個大類別（例如：飲料、主餐）。</div>';
+      return;
+    }
+    const sortedCategories = categories.slice().sort((a,b)=> a.name.localeCompare(b.name));
+    list.innerHTML = sortedCategories.map(cat=>{
+      const catItems = items.filter(i=>i.categoryId===cat.id)
+        .slice()
+        .sort((a,b)=> a.name.localeCompare(b.name));
+      const collapsed = collapsedCats.has(cat.id);
+      const itemsHtml = catItems.length === 0
+        ? '<div class="empty-hint" style="padding:8px 2px;">這個類別還沒有細項。</div>'
+        : catItems.map(it=>{
+            const splitItems = it.splitItems || [];
+            const splitRowsHtml = splitItems.map((s,idx)=>`
+              <div class="split-item-row" data-idx="${idx}">
+                <input type="text" class="split-name" placeholder="拆價名稱" value="${escapeHtml(s.name||'')}">
+                <input type="number" class="split-price" placeholder="價錢" value="${s.price!==undefined && s.price!==null ? s.price : ''}">
+                <span class="split-del">✕</span>
+              </div>
+            `).join('');
+            return `
+            <div class="item-container" data-id="${it.id}">
+              <div class="item-row">
+                <input type="text" name="ename" value="${escapeHtml(it.name)}">
+                <input type="number" name="eprice" value="${it.price}">
+                <span class="save-btn">儲存</span>
+                <span class="del-btn">刪除</span>
+              </div>
+              <label class="split-toggle-label">
+                <input type="checkbox" class="esplit" ${it.splitEnabled ? 'checked' : ''}> 拆價
+              </label>
+              <div class="split-block" style="display:${it.splitEnabled ? 'block' : 'none'};">
+                <div class="split-items">${splitRowsHtml}</div>
+                <button class="add-split-btn" type="button">＋ 新增拆價項目</button>
+              </div>
+            </div>
+          `;
+          }).join('');
+      return `
+        <div class="cat-card" data-catid="${cat.id}">
+          <div class="cat-header">
+            <span class="cat-toggle" data-catid="${cat.id}">${collapsed ? '▸' : '▾'}</span>
+            <input type="text" class="cat-name" value="${escapeHtml(cat.name)}">
+            <span class="save-btn">儲存</span>
+            <span class="del-btn">刪除類別</span>
+          </div>
+          <div class="cat-item-form">
+            <input type="text" name="iname" placeholder="細項名稱">
+            <input type="number" name="iprice" placeholder="價格" inputmode="decimal">
+            <button class="add-item-btn">新增細項</button>
+          </div>
+          <div class="cat-items" style="display:${collapsed ? 'none' : 'block'};">${itemsHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    $$('.cat-toggle', list).forEach(toggle=>{
+      toggle.addEventListener('click', ()=>{
+        const catId = toggle.dataset.catid;
+        if(collapsedCats.has(catId)) collapsedCats.delete(catId);
+        else collapsedCats.add(catId);
+        renderCategorySettings();
+      });
+    });
+
+    $$('.cat-card', list).forEach(card=>{
+      const catId = card.dataset.catid;
+
+      // 類別 儲存/刪除
+      $('.cat-header .save-btn', card).addEventListener('click', async ()=>{
+        const nameEl = $('.cat-header .cat-name', card);
+        const name = nameEl.value.trim();
+        if(!name){ toast('請輸入類別名稱'); return; }
+        const cat = categories.find(c=>c.id===catId);
+        cat.name = name;
+        await saveCategories();
+        renderCategorySettings();
+        renderCategoryChips();
+        toast('已更新類別');
+      });
+      $('.cat-header .del-btn', card).addEventListener('click', async ()=>{
+        if(!confirm('刪除這個類別會一併刪除底下所有細項，確定要刪除嗎？')) return;
+        const removedItemIds = items.filter(i=>i.categoryId===catId).map(i=>i.id);
+        categories = categories.filter(c=>c.id!==catId);
+        items = items.filter(i=>i.categoryId!==catId);
+        cart = cart.filter(c=>!removedItemIds.includes(c.itemId));
+        collapsedCats.delete(catId);
+        await saveCategories();
+        await saveItems();
+        if(activeCategoryId===catId) activeCategoryId = categories.length ? categories[0].id : null;
+        renderCategorySettings();
+        renderCategoryChips();
+        renderItemGrid();
+        renderCart();
+        toast('已刪除類別');
+      });
+
+      // 新增細項
+      $('.add-item-btn', card).addEventListener('click', async ()=>{
+        const nameEl = $('.cat-item-form input[name="iname"]', card);
+        const priceEl = $('.cat-item-form input[name="iprice"]', card);
+        const name = nameEl.value.trim();
+        const price = parseFloat(priceEl.value);
+        if(!name || isNaN(price) || price < 0){ toast('請輸入正確的細項名稱與價格'); return; }
+        items.push({ id: uid(), name, price, categoryId: catId, splitEnabled:false, splitItems:[] });
+        await saveItems();
+        nameEl.value=''; priceEl.value='';
+        renderCategorySettings();
+        renderItemGrid();
+        toast('已新增細項');
+      });
+
+      // 細項 (含拆價) 儲存/刪除
+      $$('.item-container', card).forEach(container=>{
+        const id = container.dataset.id;
+        const row = $('.item-row', container);
+        const splitBlock = $('.split-block', container);
+        const splitItemsWrap = $('.split-items', container);
+
+        $('.esplit', container).addEventListener('change', (e)=>{
+          splitBlock.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        $('.add-split-btn', container).addEventListener('click', ()=>{
+          const idx = $$('.split-item-row', splitItemsWrap).length;
+          const div = document.createElement('div');
+          div.className = 'split-item-row';
+          div.dataset.idx = idx;
+          div.innerHTML = `
+            <input type="text" class="split-name" placeholder="拆價名稱">
+            <input type="number" class="split-price" placeholder="價錢">
+            <span class="split-del">✕</span>
+          `;
+          splitItemsWrap.appendChild(div);
+        });
+
+        splitItemsWrap.addEventListener('click', (e)=>{
+          if(e.target.classList.contains('split-del')){
+            e.target.closest('.split-item-row').remove();
+          }
+        });
+
+        $('.save-btn', row).addEventListener('click', async ()=>{
+          const name = $('input[name="ename"]', row).value.trim();
+          const price = parseFloat($('input[name="eprice"]', row).value);
+          if(!name || isNaN(price)){ toast('請輸入正確的名稱與價格'); return; }
+          const splitEnabled = $('.esplit', container).checked;
+          const splitItems = $$('.split-item-row', splitItemsWrap).map(r=>{
+            const sName = $('.split-name', r).value.trim();
+            const sPrice = parseFloat($('.split-price', r).value);
+            return { name: sName, price: isNaN(sPrice) ? 0 : sPrice };
+          }).filter(s=> s.name || s.price);
+          const it = items.find(i=>i.id===id);
+          it.name = name; it.price = price;
+          it.splitEnabled = splitEnabled;
+          it.splitItems = splitEnabled ? splitItems : [];
+          await saveItems();
+          cart.forEach(c=>{ if(c.itemId===id){ c.name=name; c.price=price; } });
+          renderCategorySettings();
+          renderItemGrid();
+          renderCart();
+          toast('已更新細項');
+        });
+        $('.del-btn', row).addEventListener('click', async ()=>{
+          items = items.filter(i=>i.id!==id);
+          cart = cart.filter(c=>c.itemId!==id);
+          await saveItems();
+          renderCategorySettings();
+          renderItemGrid();
+          renderCart();
+          toast('已刪除細項');
+        });
+      });
+    });
+  }
+
+  $('#addCatBtn').addEventListener('click', async ()=>{
+    const nameEl = $('#newCatName');
+    const name = nameEl.value.trim();
+    if(!name){ toast('請輸入類別名稱'); return; }
+    const cat = { id: uid(), name };
+    categories.push(cat);
+    await saveCategories();
+    nameEl.value = '';
+    if(!activeCategoryId) activeCategoryId = cat.id;
+    renderCategorySettings();
+    renderCategoryChips();
+    renderItemGrid();
+    toast('已新增類別');
+  });
+
+  // ================= 收銀：大類別 chips =================
+  function renderCategoryChips(){
+    const row = $('#catChipRow');
+    if(categories.length === 0){
+      row.innerHTML = '<div class="empty-hint">尚無類別，請至「品項設定」新增大類別。</div>';
+      return;
+    }
+    if(!activeCategoryId || !categories.find(c=>c.id===activeCategoryId)){
+      activeCategoryId = categories[0].id;
+    }
+    const sortedCategories = categories.slice().sort((a,b)=> a.name.localeCompare(b.name));
+    row.innerHTML = sortedCategories.map(cat=>`
+      <button class="cat-chip ${cat.id===activeCategoryId ? 'active' : ''}" data-id="${cat.id}">${escapeHtml(cat.name)}</button>
+    `).join('');
+    $$('.cat-chip', row).forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        activeCategoryId = chip.dataset.id;
+        renderCategoryChips();
+        renderItemGrid();
+      });
+    });
+  }
+
+  // ================= 收銀：細項 grid =================
+  function renderItemGrid(){
+    const grid = $('#itemGrid');
+    if(categories.length === 0){
+      grid.innerHTML = '<div class="empty-hint">請先到「品項設定」新增大類別與細項。</div>';
+      return;
+    }
+    const list = items.filter(i=>i.categoryId===activeCategoryId)
+      .slice()
+      .sort((a,b)=> a.name.localeCompare(b.name));
+    if(list.length === 0){
+      grid.innerHTML = '<div class="empty-hint">這個類別還沒有細項，請至「品項設定」新增。</div>';
+      return;
+    }
+    grid.innerHTML = list.map(it => `
+      <button class="item-btn" data-id="${it.id}">
+        <span class="name">${escapeHtml(it.name)}</span>
+        <span class="price">${fmt(it.price)}</span>
+      </button>
+    `).join('');
+    $$('.item-btn', grid).forEach(b=>{
+      b.addEventListener('click', ()=> addToCart(b.dataset.id));
+    });
+  }
+
+  // ================= 收銀：購物車 =================
+  function addToCart(itemId){
+    const it = items.find(i=>i.id===itemId);
+    if(!it) return;
+    const line = cart.find(c=>c.itemId===itemId);
+    if(line){ line.qty += 1; }
+    else{ cart.push({ itemId, name:it.name, price:it.price, qty:1 }); }
+
+    // 若該品項有勾選「拆價」，點選時自動一併把拆價項目加進購物車
+    if(it.splitEnabled && it.splitItems && it.splitItems.length){
+      it.splitItems.forEach((s, idx)=>{
+        const splitId = itemId + '::split::' + idx;
+        const splitLine = cart.find(c=>c.itemId===splitId);
+        if(splitLine){ splitLine.qty += 1; }
+        else{
+          cart.push({ itemId: splitId, name: s.name + '（拆價）', price: s.price || 0, qty: 1 });
+        }
+      });
+    }
+    renderCart();
+  }
+
+  function computeSubtotal(){
+    return cart.reduce((s,c)=> s + c.price*c.qty, 0);
+  }
+  function computeDiscount(subtotal){
+    if(!$('#optDiscount').checked) return 0;
+    const v = parseFloat($('#discountInput').value);
+    if(isNaN(v) || v < 0) return 0;
+    return Math.min(v, subtotal);
+  }
+
+  function renderCart(){
+    const list = $('#cartList');
+    if(cart.length === 0){
+      list.innerHTML = '<div class="cart-empty">尚未加入任何品項</div>';
+    } else {
+      list.innerHTML = cart.map(c => `
+        <div class="cart-line" data-id="${c.itemId}">
+          <span class="cl-name">${escapeHtml(c.name)}</span>
+          <span class="qty-ctrl">
+            <button class="qminus">−</button>
+            <span>${c.qty}</span>
+            <button class="qplus">＋</button>
+          </span>
+          <span class="cl-sub">${fmt(c.price * c.qty)}</span>
+          <span class="cl-remove">✕</span>
+        </div>
+      `).join('');
+      $$('.cart-line', list).forEach(row=>{
+        const id = row.dataset.id;
+        $('.qplus', row).addEventListener('click', ()=>{
+          const c = cart.find(x=>x.itemId===id); c.qty+=1; renderCart();
+        });
+        $('.qminus', row).addEventListener('click', ()=>{
+          const c = cart.find(x=>x.itemId===id);
+          c.qty-=1;
+          if(c.qty<=0) cart = cart.filter(x=>x.itemId!==id);
+          renderCart();
+        });
+        $('.cl-remove', row).addEventListener('click', ()=>{
+          cart = cart.filter(x=>x.itemId!==id);
+          renderCart();
+        });
+      });
+    }
+    $('#checkoutBtn').disabled = cart.length === 0;
+    renderTotals();
+  }
+
+  function computeDeposit(total){
+    if(!$('#optDeposit').checked) return 0;
+    let sum = 0;
+    if($('#optDepositCash').checked){
+      const v = parseFloat($('#depositCashAmount').value);
+      if(!isNaN(v) && v >= 0) sum += v;
+    }
+    if($('#optDepositTransfer').checked){
+      const v = parseFloat($('#depositTransferAmount').value);
+      if(!isNaN(v) && v >= 0) sum += v;
+    }
+    return Math.min(sum, total);
+  }
+
+  function computeCleanupAmount(){
+    if(!$('#optCleanup').checked) return 0;
+    const v = parseFloat($('#cleanupAmount').value);
+    return (isNaN(v) || v < 0) ? 0 : v;
+  }
+
+  function computeMovingAmount(){
+    if(!$('#optMoving').checked) return 0;
+    const v = parseFloat($('#movingAmount').value);
+    return (isNaN(v) || v < 0) ? 0 : v;
+  }
+
+  function computeTax(){
+    if(!$('#optInvoice').checked) return 0;
+    const v = parseFloat($('#taxInput').value);
+    return (isNaN(v) || v < 0) ? 0 : v;
+  }
+
+  function computeReceived(){
+    let sum = 0;
+    if($('#optCash').checked){
+      const v = parseFloat($('#cashAmountInput').value);
+      if(!isNaN(v) && v >= 0) sum += v;
+    }
+    if($('#optTransfer').checked){
+      const v = parseFloat($('#transferAmountInput').value);
+      if(!isNaN(v) && v >= 0) sum += v;
+    }
+    return sum;
+  }
+
+  function renderTotals(){
+    const subtotal = computeSubtotal();
+    const discount = computeDiscount(subtotal);
+    const itemsTotal = Math.max(subtotal - discount, 0);
+    const cleanupAmt = computeCleanupAmount();
+    const movingAmt = computeMovingAmount();
+    const taxAmt = computeTax();
+    const total = itemsTotal + cleanupAmt + movingAmt + taxAmt;
+    const deposit = computeDeposit(total);
+    const balance = Math.max(total - deposit, 0);
+
+    $('#subtotalRow').style.display = discount > 0 ? 'flex' : 'none';
+    $('#discountRow').style.display = discount > 0 ? 'flex' : 'none';
+    $('#subtotalDisplay').textContent = fmt(subtotal);
+    $('#discountDisplay').textContent = '-' + fmt(discount);
+    $('#cleanupTotalRow').style.display = cleanupAmt > 0 ? 'flex' : 'none';
+    $('#cleanupTotalDisplay').textContent = fmt(cleanupAmt);
+    $('#movingTotalRow').style.display = movingAmt > 0 ? 'flex' : 'none';
+    $('#movingTotalDisplay').textContent = fmt(movingAmt);
+    $('#taxTotalRow').style.display = taxAmt > 0 ? 'flex' : 'none';
+    $('#taxTotalDisplay').textContent = fmt(taxAmt);
+    $('#totalDisplay').textContent = fmt(total);
+    $('#balanceRow').style.display = deposit > 0 ? 'flex' : 'none';
+    $('#balanceDisplay').textContent = fmt(balance);
+
+    // 只有單選一種付款方式且尚未手動修改時，才自動帶入應收金額
+    const cashOn = $('#optCash').checked, transferOn = $('#optTransfer').checked;
+    if(cashOn && !transferOn && !cashEdited){
+      $('#cashAmountInput').value = balance > 0 ? balance : '';
+    }
+    if(transferOn && !cashOn && !transferEdited){
+      $('#transferAmountInput').value = balance > 0 ? balance : '';
+    }
+    $('#cashHint').textContent = $('#optDeposit').checked
+      ? '已勾選訂金，付款方式暫時鎖定；尾款/找零會直接以應收餘額計算'
+      : '勾選付款方式後會自動帶入應收金額；如需分開填寫或有尾款/找零情況可自行調整';
+    renderPayment(balance);
+  }
+
+  function renderPayment(balance){
+    const disp = $('#payDisplay');
+    const depositOn = $('#optDeposit').checked;
+    const cashOn = $('#optCash').checked, transferOn = $('#optTransfer').checked;
+    if(!depositOn && !cashOn && !transferOn){
+      disp.textContent = '請勾選現場結清或訂金';
+      disp.className = 'pill zero';
+      return;
+    }
+    const received = computeReceived();
+    const diff = received - balance;
+    if(diff < -0.001){
+      disp.textContent = '尾款 ' + fmt(-diff);
+      disp.className = 'pill unpaid';
+    } else if(diff > 0.001){
+      disp.textContent = '找零 ' + fmt(diff);
+      disp.className = 'pill change';
+    } else {
+      disp.textContent = '剛好付清';
+      disp.className = 'pill change';
+    }
+  }
+
+  $('#optSettleNow').addEventListener('change', (e)=>{
+    const show = e.target.checked;
+    $('#settleFields').style.display = show ? 'block' : 'none';
+    if(!show){
+      $('#optCash').checked = false;
+      $('#cashAmountInput').value = ''; $('#cashAmountInput').disabled = true;
+      $('#optTransfer').checked = false;
+      $('#transferAmountInput').value = ''; $('#transferAmountInput').disabled = true;
+      cashEdited = false; transferEdited = false;
+    }
+    // 勾選「現場結清」後，「訂金」鎖住不能選
+    const depositBox = $('#optDeposit');
+    if(show){
+      depositBox.checked = false;
+      depositBox.disabled = true;
+      $('#depositFields').style.display = 'none';
+      $('#optDepositCash').checked = false;
+      $('#depositCashAmount').value = ''; $('#depositCashAmount').disabled = true;
+      $('#optDepositTransfer').checked = false;
+      $('#depositTransferAmount').value = ''; $('#depositTransferAmount').disabled = true;
+    } else {
+      depositBox.disabled = false;
+    }
+    renderTotals();
+  });
+
+  $('#optCash').addEventListener('change', (e)=>{
+    const input = $('#cashAmountInput');
+    if(e.target.checked){ input.disabled = false; }
+    else { input.disabled = true; input.value = ''; cashEdited = false; }
+    renderTotals();
+  });
+  $('#cashAmountInput').addEventListener('input', ()=>{
+    cashEdited = true;
+    const subtotal = computeSubtotal();
+    const discount = computeDiscount(subtotal);
+    const itemsTotal = Math.max(subtotal - discount, 0);
+    const total = itemsTotal + computeCleanupAmount() + computeMovingAmount() + computeTax();
+    const deposit = computeDeposit(total);
+    renderPayment(Math.max(total - deposit, 0));
+  });
+
+  $('#optTransfer').addEventListener('change', (e)=>{
+    const input = $('#transferAmountInput');
+    if(e.target.checked){ input.disabled = false; }
+    else { input.disabled = true; input.value = ''; transferEdited = false; }
+    renderTotals();
+  });
+  $('#transferAmountInput').addEventListener('input', ()=>{
+    transferEdited = true;
+    const subtotal = computeSubtotal();
+    const discount = computeDiscount(subtotal);
+    const itemsTotal = Math.max(subtotal - discount, 0);
+    const total = itemsTotal + computeCleanupAmount() + computeMovingAmount() + computeTax();
+    const deposit = computeDeposit(total);
+    renderPayment(Math.max(total - deposit, 0));
+  });
+
+  $('#optDiscount').addEventListener('change', (e)=>{
+    const input = $('#discountInput');
+    if(e.target.checked){
+      input.disabled = false;
+      input.focus();
+    } else {
+      input.disabled = true;
+      input.value = '';
+    }
+    renderTotals();
+  });
+  $('#discountInput').addEventListener('input', renderTotals);
+
+  $('#optDeposit').addEventListener('change', (e)=>{
+    const show = e.target.checked;
+    $('#depositFields').style.display = show ? 'block' : 'none';
+    if(!show){
+      $('#optDepositCash').checked = false;
+      $('#depositCashAmount').value = ''; $('#depositCashAmount').disabled = true;
+      $('#optDepositTransfer').checked = false;
+      $('#depositTransferAmount').value = ''; $('#depositTransferAmount').disabled = true;
+    }
+    // 勾選訂金後，「現場結清」整個區塊鎖住不能選，尾款/找零直接以應收餘額結算
+    const settleBox = $('#optSettleNow');
+    if(show){
+      settleBox.checked = false;
+      settleBox.disabled = true;
+      $('#settleFields').style.display = 'none';
+      $('#optCash').checked = false; $('#optCash').disabled = true;
+      $('#optTransfer').checked = false; $('#optTransfer').disabled = true;
+      $('#cashAmountInput').disabled = true; $('#cashAmountInput').value = '';
+      $('#transferAmountInput').disabled = true; $('#transferAmountInput').value = '';
+      cashEdited = false; transferEdited = false;
+    } else {
+      settleBox.disabled = false;
+      $('#optCash').disabled = false;
+      $('#optTransfer').disabled = false;
+    }
+    renderTotals();
+  });
+  $('#optDepositCash').addEventListener('change', (e)=>{
+    const input = $('#depositCashAmount');
+    if(e.target.checked){ input.disabled = false; }
+    else { input.disabled = true; input.value = ''; }
+    renderTotals();
+  });
+  $('#depositCashAmount').addEventListener('input', renderTotals);
+
+  $('#optDepositTransfer').addEventListener('change', (e)=>{
+    const input = $('#depositTransferAmount');
+    if(e.target.checked){ input.disabled = false; }
+    else { input.disabled = true; input.value = ''; }
+    renderTotals();
+  });
+  $('#depositTransferAmount').addEventListener('input', renderTotals);
+
+  // ---- 開單 -> 送貨/自取 -> 清運 / 收件資訊 / 搬運費 的連動顯示與欄位鎖定 ----
+  function wireToggle(checkboxId, inputIds, affectsTotal){
+    const box = $('#'+checkboxId);
+    box.addEventListener('change', ()=>{
+      inputIds.forEach(iid=>{
+        const el = $('#'+iid);
+        if(box.checked){ el.disabled = false; }
+        else { el.disabled = true; el.value = ''; }
+      });
+      if(affectsTotal) renderTotals();
+    });
+  }
+  wireToggle('optCleanup', ['cleanupAmount','cleanupItems'], true);
+  wireToggle('optRecipient', ['recipientInput']);
+  wireToggle('optAddress', ['addressInput']);
+  wireToggle('optPhone', ['phoneInput']);
+  wireToggle('optGeo', ['geoInput']);
+  wireToggle('optMoving', ['movingAmount','movingAddress'], true);
+  $('#optMoving').addEventListener('change', (e)=>{
+    $('#movingFieldsRow').style.display = e.target.checked ? 'flex' : 'none';
+  });
+  $('#cleanupAmount').addEventListener('input', renderTotals);
+  $('#movingAmount').addEventListener('input', renderTotals);
+  $('#taxInput').addEventListener('input', renderTotals);
+
+  function resetDeliveryExtra(){
+    ['optCleanup','optRecipient','optAddress','optPhone','optGeo'].forEach(id=>{ $('#'+id).checked = false; });
+    ['cleanupAmount','cleanupItems','recipientInput','addressInput','phoneInput','geoInput'].forEach(id=>{
+      const el = $('#'+id); el.disabled = true; el.value = '';
+    });
+  }
+
+  function resetMovingFields(){
+    $('#optMoving').checked = false;
+    $('#movingFieldsRow').style.display = 'none';
+    ['movingAmount','movingAddress'].forEach(id=>{
+      const el = $('#'+id); el.disabled = true; el.value = '';
+    });
+  }
+
+  function resetInvoiceExtra(){
+    $('#invoiceExtra').style.display = 'none';
+    ['buyerInput','taxIdInput','taxInput'].forEach(id=>{ $('#'+id).value = ''; });
+  }
+
+  function updateDeliveryExtraVisibility(){
+    const show = $('#optDelivery').checked || $('#optPickup').checked;
+    $('#deliveryExtra').style.display = show ? 'block' : 'none';
+    if(!show) resetDeliveryExtra();
+  }
+  $('#optDelivery').addEventListener('change', updateDeliveryExtraVisibility);
+  $('#optPickup').addEventListener('change', updateDeliveryExtraVisibility);
+
+  $('#optTab').addEventListener('change', (e)=>{
+    $('#tabExtra').style.display = e.target.checked ? 'block' : 'none';
+    if(!e.target.checked){
+      $('#optDelivery').checked = false;
+      $('#optPickup').checked = false;
+      updateDeliveryExtraVisibility();
+      resetMovingFields();
+    }
+  });
+
+  $('#optInvoice').addEventListener('change', (e)=>{
+    $('#invoiceExtra').style.display = e.target.checked ? 'block' : 'none';
+    if(!e.target.checked) resetInvoiceExtra();
+    renderTotals();
+  });
+
+  function resetOrderExtras(){
+    $('#noteInput').value = '';
+    $('#optTab').checked = false;
+    $('#optInvoice').checked = false;
+    $('#tabExtra').style.display = 'none';
+    $('#optDelivery').checked = false;
+    $('#optPickup').checked = false;
+    $('#deliveryExtra').style.display = 'none';
+    resetDeliveryExtra();
+    resetMovingFields();
+    resetInvoiceExtra();
+    $('#optDiscount').checked = false;
+    $('#discountInput').value = '';
+    $('#discountInput').disabled = true;
+    $('#optDeposit').checked = false;
+    $('#optDeposit').disabled = false;
+    $('#depositFields').style.display = 'none';
+    $('#optDepositCash').checked = false;
+    $('#depositCashAmount').value = '';
+    $('#depositCashAmount').disabled = true;
+    $('#optDepositTransfer').checked = false;
+    $('#depositTransferAmount').value = '';
+    $('#depositTransferAmount').disabled = true;
+    $('#optSettleNow').checked = false;
+    $('#optSettleNow').disabled = false;
+    $('#settleFields').style.display = 'none';
+    $('#optCash').checked = false;
+    $('#optCash').disabled = false;
+    $('#cashAmountInput').value = '';
+    $('#cashAmountInput').disabled = true;
+    $('#optTransfer').checked = false;
+    $('#optTransfer').disabled = false;
+    $('#transferAmountInput').value = '';
+    $('#transferAmountInput').disabled = true;
+    cashEdited = false;
+    transferEdited = false;
+  }
+
+  $('#clearBtn').addEventListener('click', ()=>{
+    cart = [];
+    resetOrderExtras();
+    renderCart();
+  });
+
+  $('#checkoutBtn').addEventListener('click', async ()=>{
+    if(cart.length === 0) return;
+    const subtotal = computeSubtotal();
+    const discount = computeDiscount(subtotal);
+    const itemsTotal = Math.max(subtotal - discount, 0);
+    const cleanupAmt = computeCleanupAmount();
+    const movingAmt = computeMovingAmount();
+    const taxAmt = computeTax();
+    const total = itemsTotal + cleanupAmt + movingAmt + taxAmt;
+    const deposit = computeDeposit(total);
+    const balance = Math.max(total - deposit, 0);
+    const cash = $('#optCash').checked ? (parseFloat($('#cashAmountInput').value) || 0) : 0;
+    const transfer = $('#optTransfer').checked ? (parseFloat($('#transferAmountInput').value) || 0) : 0;
+    const received = cash + transfer;
+    const unpaid = Math.max(balance - received, 0);
+    const change = Math.max(received - balance, 0);
+
+    const needsTab = $('#optTab').checked;
+    const delivery = needsTab && $('#optDelivery').checked;
+    const pickup = needsTab && $('#optPickup').checked;
+    const cleanup = {
+      enabled: $('#optCleanup').checked,
+      amount: cleanupAmt,
+      items: $('#optCleanup').checked ? $('#cleanupItems').value.trim() : ''
+    };
+    const recipient = $('#optRecipient').checked ? $('#recipientInput').value.trim() : '';
+    const address = $('#optAddress').checked ? $('#addressInput').value.trim() : '';
+    const phone = $('#optPhone').checked ? $('#phoneInput').value.trim() : '';
+    const geo = $('#optGeo').checked ? $('#geoInput').value.trim() : '';
+    const moving = {
+      enabled: $('#optMoving').checked,
+      amount: movingAmt,
+      address: $('#optMoving').checked ? $('#movingAddress').value.trim() : ''
+    };
+    const invoiceOn = $('#optInvoice').checked;
+    const buyer = invoiceOn ? $('#buyerInput').value.trim() : '';
+    const taxId = invoiceOn ? $('#taxIdInput').value.trim() : '';
+    const depositCash = deposit > 0 && $('#optDepositCash').checked;
+    const depositTransfer = deposit > 0 && $('#optDepositTransfer').checked;
+    const depositCashAmt = $('#optDepositCash').checked ? (parseFloat($('#depositCashAmount').value) || 0) : 0;
+    const depositTransferAmt = $('#optDepositTransfer').checked ? (parseFloat($('#depositTransferAmount').value) || 0) : 0;
+
+    const order = {
+      id: uid(),
+      time: new Date().toISOString(),
+      lines: cart.map(c=>({ name:c.name, price:c.price, qty:c.qty })),
+      note: $('#noteInput').value.trim(),
+      needsTab, invoice: invoiceOn, buyer, taxId, tax: taxAmt,
+      delivery, pickup, cleanup, recipient, address, phone, geo, moving,
+      subtotal, discount, cleanupAmt, movingAmt, taxAmt, deposit, depositCash, depositTransfer,
+      depositCashAmt, depositTransferAmt, total, balance,
+      cash, transfer, received, unpaid, change,
+      collected: unpaid === 0
+    };
+    orders.unshift(order);
+    await saveOrders();
+    await fsSetOrder(order);
+    cart = [];
+    resetOrderExtras();
+    renderCart();
+    toast('已完成結帳 ' + fmt(total));
+  });
+
+  // ================= 訂單紀錄 =================
+  function isToday(iso){
+    const d = new Date(iso), n = new Date();
+    return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+  }
+
+  function monthKey(iso){
+    const d = new Date(iso);
+    return d.getFullYear() + '-' + (d.getMonth()+1);
+  }
+  function monthLabel(iso){
+    const d = new Date(iso);
+    return d.getFullYear() + '年' + (d.getMonth()+1) + '月';
+  }
+  function dayKey(iso){
+    const d = new Date(iso);
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  }
+  function dayLabel(iso){
+    const d = new Date(iso);
+    const weekday = d.toLocaleDateString('zh-Hant-TW', {weekday:'short'});
+    return (d.getMonth()+1) + '月' + d.getDate() + '日（' + weekday + '）';
+  }
+
+  function renderHistory(){
+    const todays = orders.filter(o=>isToday(o.time));
+    $('#statCount').textContent = todays.length;
+    $('#statSales').textContent = fmt(todays.reduce((s,o)=>s+o.total,0));
+    $('#statUnpaid').textContent = fmt(todays.reduce((s,o)=>s+o.unpaid,0));
+
+    const list = $('#historyList');
+    if(orders.length === 0){
+      list.innerHTML = '<div class="history-empty">目前還沒有任何訂單紀錄。</div>';
+      return;
+    }
+
+    const searchTerm = $('#historySearch').value.trim().toLowerCase();
+    let visibleOrders = orders;
+    if(searchTerm){
+      visibleOrders = orders.filter(o=>{
+        const nameMatch = (o.recipient && o.recipient.toLowerCase().includes(searchTerm))
+          || (o.buyer && o.buyer.toLowerCase().includes(searchTerm));
+        const addressMatch = (o.address && o.address.toLowerCase().includes(searchTerm))
+          || (o.moving && o.moving.address && o.moving.address.toLowerCase().includes(searchTerm));
+        const itemMatch = o.lines.some(l => l.name.toLowerCase().includes(searchTerm));
+        return nameMatch || addressMatch || itemMatch;
+      });
+    }
+    if(visibleOrders.length === 0){
+      list.innerHTML = `<div class="history-empty">找不到符合「${escapeHtml($('#historySearch').value.trim())}」的訂單（客人姓名、地址或商品名稱）。</div>`;
+      return;
+    }
+
+    // 依月份分組，每個月裡再依日期分組（orders 本身已是最新在前）
+    const groups = [];
+    const groupMap = {};
+    visibleOrders.forEach(o=>{
+      const mKey = monthKey(o.time);
+      if(!groupMap[mKey]){
+        groupMap[mKey] = { key: mKey, label: monthLabel(o.time), days: [], dayMap: {} };
+        groups.push(groupMap[mKey]);
+      }
+      const mGroup = groupMap[mKey];
+      const dKey = dayKey(o.time);
+      if(!mGroup.dayMap[dKey]){
+        mGroup.dayMap[dKey] = { key: dKey, label: dayLabel(o.time), orders: [] };
+        mGroup.days.push(mGroup.dayMap[dKey]);
+      }
+      mGroup.dayMap[dKey].orders.push(o);
+    });
+
+    function renderOrderCard(o){
+      const t = new Date(o.time);
+      const timeStr = t.toLocaleDateString('zh-Hant-TW') + ' ' + t.toLocaleTimeString('zh-Hant-TW', {hour:'2-digit', minute:'2-digit'});
+      const itemsStr = o.lines.map(l => `${escapeHtml(l.name)} x${l.qty}`).join('、');
+      const payRow = o.unpaid > 0
+        ? `<span class="pill unpaid">未收 ${fmt(o.unpaid)}</span>`
+        : (o.change > 0 ? `<span class="pill change">找零 ${fmt(o.change)}</span>` : `<span class="pill zero">付清</span>`);
+      const collectedNoteHtml = o.collectedNote
+        ? `<span class="pill zero">（${escapeHtml(o.collectedNote)}）</span>`
+        : '';
+      const badges = [];
+      if(o.needsTab) badges.push('開單');
+      if(o.delivery) badges.push('送貨');
+      if(o.pickup) badges.push('自取');
+      if(o.cleanup && o.cleanup.enabled) badges.push('清運');
+      if(o.moving && o.moving.enabled) badges.push('搬運費');
+      if(o.invoice) badges.push('發票');
+      if(o.discount > 0) badges.push('折扣 -' + fmt(o.discount).replace('$',''));
+      if(o.deposit > 0){
+        let depositLabel = '訂金 ' + fmt(o.deposit);
+        const depositMethods = [];
+        if(o.depositCash) depositMethods.push('現金 ' + fmt(o.depositCashAmt !== undefined ? o.depositCashAmt : o.deposit));
+        if(o.depositTransfer) depositMethods.push('匯款 ' + fmt(o.depositTransferAmt !== undefined ? o.depositTransferAmt : o.deposit));
+        if(depositMethods.length) depositLabel += '（' + depositMethods.join('、') + '）';
+        badges.push(depositLabel);
+      }
+      const badgesHtml = badges.length
+        ? `<div class="oc-badges">${badges.map(b=>`<span class="oc-badge">${escapeHtml(b)}</span>`).join('')}</div>`
+        : '';
+      const deliveryDetails = [];
+      if(o.cleanup && o.cleanup.enabled){
+        deliveryDetails.push(`清運金額 ${fmt(o.cleanup.amount)}${o.cleanup.items ? '，回收品項：' + escapeHtml(o.cleanup.items) : ''}`);
+      }
+      if(o.moving && o.moving.enabled){
+        deliveryDetails.push(`搬運費 ${fmt(o.moving.amount)}${o.moving.address ? '，搬運地址：' + escapeHtml(o.moving.address) : ''}`);
+      }
+      if(o.recipient) deliveryDetails.push('收件人：' + escapeHtml(o.recipient));
+      if(o.address) deliveryDetails.push('地址：' + escapeHtml(o.address));
+      if(o.phone) deliveryDetails.push('電話：' + escapeHtml(o.phone));
+      if(o.geo){
+        const geoTrimmed = o.geo.trim();
+        const geoUrl = /^https?:\/\//i.test(geoTrimmed)
+          ? geoTrimmed
+          : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(geoTrimmed);
+        deliveryDetails.push('定位：<a href="' + escapeHtml(geoUrl) + '" target="_blank" rel="noopener" class="geo-link">' + escapeHtml(o.geo) + '</a>');
+      }
+      if(o.invoice){
+        if(o.buyer) deliveryDetails.push('買受人：' + escapeHtml(o.buyer));
+        if(o.taxId) deliveryDetails.push('統一編號：' + escapeHtml(o.taxId));
+        if(o.taxAmt || o.tax) deliveryDetails.push('稅金：' + fmt(o.taxAmt !== undefined ? o.taxAmt : o.tax));
+      }
+      const deliveryDetailsHtml = deliveryDetails.length
+        ? `<div class="oc-note">${deliveryDetails.join('<br>')}</div>`
+        : '';
+      const payParts = [];
+      if(o.cash) payParts.push('現金 ' + fmt(o.cash));
+      if(o.transfer) payParts.push('匯款 ' + fmt(o.transfer));
+      const paidStr = payParts.length ? payParts.join('、') : fmt(o.received !== undefined ? o.received : o.cash || 0);
+      return `
+        <div class="order-card" data-id="${o.id}">
+          <div class="oc-top"><span>${timeStr}</span><span>已付 ${paidStr}</span></div>
+          <div class="oc-total">${fmt(o.total)}</div>
+          <div class="oc-items">${itemsStr}</div>
+          ${o.note ? `<div class="oc-note">備註：${escapeHtml(o.note)}</div>` : ''}
+          ${badgesHtml}
+          ${deliveryDetailsHtml}
+          <div class="oc-pay">${payRow}${collectedNoteHtml}</div>
+          <div class="oc-buttons">
+            ${o.unpaid > 0 ? `<button class="collect-btn">標記已收款</button>` : ''}
+            <button class="delete-order-btn">刪除訂單</button>
+          </div>
+        </div>
+      `;
+    }
+
+    list.innerHTML = groups.map(g=>{
+      const count = g.days.reduce((s,d)=>s+d.orders.length, 0);
+      const sum = g.days.reduce((s,d)=>s+d.orders.reduce((s2,o)=>s2+o.total,0), 0);
+      const monthCollapsed = collapsedMonths.has(g.key);
+      const daysHtml = g.days.map(d=>{
+        const dCount = d.orders.length;
+        const dSum = d.orders.reduce((s,o)=>s+o.total,0);
+        const dayCollapsed = collapsedDays.has(d.key);
+        return `
+          <div class="day-header" data-daykey="${d.key}">
+            <span class="day-toggle">${dayCollapsed ? '▸' : '▾'}</span>
+            <span class="day-label">${d.label}</span>
+            <span class="day-meta">${dCount} 筆 · ${fmt(dSum)}</span>
+          </div>
+          <div class="day-body" style="display:${dayCollapsed ? 'none' : 'block'};">
+            ${d.orders.map(renderOrderCard).join('')}
+          </div>
+        `;
+      }).join('');
+      return `
+        <div class="month-group">
+          <div class="month-header" data-monthkey="${g.key}">
+            <span class="month-toggle">${monthCollapsed ? '▸' : '▾'}</span>
+            <span class="month-label">${g.label}</span>
+            <span class="month-meta">${count} 筆 · ${fmt(sum)}</span>
+          </div>
+          <div class="month-body" style="display:${monthCollapsed ? 'none' : 'block'};">
+            ${daysHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    $$('.month-header', list).forEach(header=>{
+      header.addEventListener('click', ()=>{
+        const key = header.dataset.monthkey;
+        if(collapsedMonths.has(key)) collapsedMonths.delete(key);
+        else collapsedMonths.add(key);
+        renderHistory();
+      });
+    });
+    $$('.day-header', list).forEach(header=>{
+      header.addEventListener('click', ()=>{
+        const key = header.dataset.daykey;
+        if(collapsedDays.has(key)) collapsedDays.delete(key);
+        else collapsedDays.add(key);
+        renderHistory();
+      });
+    });
+
+    $$('.collect-btn', list).forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const card = btn.closest('.order-card');
+        const id = card.dataset.id;
+        const o = orders.find(x=>x.id===id);
+        const remaining = o.unpaid;
+        o.cash = (o.cash || 0) + remaining;
+        o.received = (o.received || 0) + remaining;
+        o.unpaid = 0; o.change = 0; o.collected = true;
+        const now = new Date();
+        o.collectedNote = `${now.getMonth()+1}/${now.getDate()}已收款`;
+        await saveOrders();
+        await fsSetOrder(o);
+        renderHistory();
+        toast('已標記收款完成');
+      });
+    });
+    $$('.delete-order-btn', list).forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!confirm('確定要刪除這筆訂單嗎？此動作無法復原。')) return;
+        const card = btn.closest('.order-card');
+        const id = card.dataset.id;
+        orders = orders.filter(o=>o.id!==id);
+        await saveOrders();
+        await fsDeleteOrder(id);
+        renderHistory();
+        toast('已刪除訂單');
+      });
+    });
+  }
+
+  // ================= 今日結帳 =================
+  function renderDaily(){
+    const todays = orders.filter(o=>isToday(o.time));
+
+    // 今日售出品項彙總
+    const itemMap = {};
+    todays.forEach(o=>{
+      o.lines.forEach(l=>{
+        if(!itemMap[l.name]) itemMap[l.name] = { name:l.name, qty:0, subtotal:0 };
+        itemMap[l.name].qty += l.qty;
+        itemMap[l.name].subtotal += l.price * l.qty;
+      });
+    });
+    const itemRows = Object.values(itemMap).sort((a,b)=> a.name.localeCompare(b.name));
+
+    const itemsListEl = $('#dailyItemsList');
+    if(itemRows.length === 0){
+      itemsListEl.innerHTML = '<div class="history-empty">今天還沒有賣出任何東西。</div>';
+    } else {
+      itemsListEl.innerHTML = '<div class="daily-card">' + itemRows.map(it=>`
+        <div class="daily-row">
+          <span class="dr-label">${escapeHtml(it.name)} × ${it.qty}</span>
+          <span class="dr-value">${fmt(it.subtotal)}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    // 收款方式明細（若該筆有找零，依現金/匯款的比例扣除找零，避免把找零也算成收入）
+    let depositCashTotal = 0, depositTransferTotal = 0, settleCashTotal = 0, settleTransferTotal = 0, unpaidTotal = 0;
+    todays.forEach(o=>{
+      depositCashTotal += o.depositCashAmt || 0;
+      depositTransferTotal += o.depositTransferAmt || 0;
+
+      let cashPart = o.cash || 0;
+      let transferPart = o.transfer || 0;
+      const changeAmt = o.change || 0;
+      if(changeAmt > 0){
+        const receivedSum = cashPart + transferPart;
+        if(receivedSum > 0){
+          const keepRatio = Math.max(receivedSum - changeAmt, 0) / receivedSum;
+          cashPart *= keepRatio;
+          transferPart *= keepRatio;
+        }
+      }
+      settleCashTotal += cashPart;
+      settleTransferTotal += transferPart;
+      unpaidTotal += o.unpaid || 0;
+    });
+
+    const paymentListEl = $('#dailyPaymentList');
+    paymentListEl.innerHTML = `
+      <div class="daily-card">
+        <div class="daily-row"><span class="dr-label">訂金（現金）</span><span class="dr-value">${fmt(depositCashTotal)}</span></div>
+        <div class="daily-row"><span class="dr-label">訂金（匯款）</span><span class="dr-value">${fmt(depositTransferTotal)}</span></div>
+        <div class="daily-row"><span class="dr-label">現場結清（現金）</span><span class="dr-value">${fmt(settleCashTotal)}</span></div>
+        <div class="daily-row"><span class="dr-label">現場結清（匯款）</span><span class="dr-value">${fmt(settleTransferTotal)}</span></div>
+      </div>
+    `;
+
+    // 今日總計
+    const totalCash = depositCashTotal + settleCashTotal;
+    const totalTransfer = depositTransferTotal + settleTransferTotal;
+    const totalIncome = totalCash + totalTransfer + unpaidTotal;
+
+    const totalsListEl = $('#dailyTotalsList');
+    totalsListEl.innerHTML = `
+      <div class="daily-card">
+        <div class="daily-row total"><span class="dr-label">總現金金額</span><span class="dr-value">${fmt(totalCash)}</span></div>
+        <div class="daily-row total"><span class="dr-label">總匯款金額</span><span class="dr-value">${fmt(totalTransfer)}</span></div>
+        <div class="daily-row unpaid"><span class="dr-label">未收尾款</span><span class="dr-value">${fmt(unpaidTotal)}</span></div>
+        <div class="daily-row income"><span class="dr-label">總收入</span><span class="dr-value">${fmt(totalIncome)}</span></div>
+      </div>
+    `;
+
+    $('#dailyStatCount').textContent = todays.length;
+    $('#dailyStatIncome').textContent = fmt(totalIncome);
+    $('#dailyStatUnpaid').textContent = fmt(unpaidTotal);
+  }
+
+  // ---------- init ----------
+  (async function init(){
+    await loadAll();
+    if(categories.length) activeCategoryId = categories[0].id;
+    renderCategoryChips();
+    renderItemGrid();
+    renderCategorySettings();
+    renderCart();
+    renderHistory();
+    renderDaily();
+
+    // 連接 Firebase，成功後訂閱即時同步（其他裝置的變動會自動反映在這裡）
+    await initFirebase();
+    if(fbReady){
+      subscribeCatalog();
+      subscribeOrders();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

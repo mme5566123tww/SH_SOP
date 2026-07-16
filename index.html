@@ -140,8 +140,8 @@
 
   /* item grid (cashier tab) */
   .item-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
+    display:flex;
+    flex-direction:column;
     gap:8px;
     margin-top:10px;
   }
@@ -482,7 +482,7 @@
     font-size:14px;
     min-width:0;
   }
-  .item-form input[name="iname"], .item-form input#newCatName{ flex:1; }
+  .item-form input[name="iname"], .item-form input#newDivName{ flex:1; }
   .item-form input[name="iprice"]{ width:90px; font-family:var(--mono); }
   .item-form button{
     background:var(--ink);
@@ -557,7 +557,44 @@
   .item-row .save-btn{ font-size:11px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
   .item-row .del-btn{ font-size:11px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
 
-  .split-toggle-label{
+  .div-card{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:12px;
+    padding:14px;
+    margin-top:14px;
+  }
+  .div-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .div-toggle{
+    flex:0 0 auto;
+    width:20px;
+    text-align:center;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-size:14px;
+    user-select:none;
+  }
+  .div-header input.div-name{
+    flex:1;
+    min-width:0;
+    font-weight:800;
+    font-size:16px;
+    border:1px solid transparent;
+    padding:6px 8px;
+    border-radius:6px;
+    background:transparent;
+    color:var(--gold);
+  }
+  .div-header input.div-name:focus{ border-color:var(--line); background:var(--card); }
+  .div-header .save-btn{ font-size:12px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .div-header .del-btn{ font-size:12px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .div-body{ margin-top:4px; }
+
+  .color-toggle-label{
     display:flex;
     align-items:center;
     gap:6px;
@@ -567,23 +604,67 @@
     margin-top:6px;
     cursor:pointer;
   }
-  .split-toggle-label input[type="checkbox"]{
+  .color-toggle-label input[type="checkbox"]{
     width:15px; height:15px;
     accent-color:var(--accent);
     cursor:pointer;
   }
-  .split-block{ margin-top:6px; }
-  .split-item-row{
+  .color-block{ margin-top:6px; }
+  .color-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .color-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:600;
+  }
+  .color-tag-del{ color:var(--brick); cursor:pointer; font-size:12px; }
+  .color-add-row{
+    display:flex;
+    gap:6px;
+  }
+  .color-add-row input{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; background:#fff; }
+  .color-add-row button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  .subitem-block{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); }
+  .subitem-label{ font-size:11px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+  .subitem-row{
     display:flex;
     align-items:center;
     gap:6px;
     margin-top:6px;
   }
-  .split-item-row input.split-name{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; background:#fff; }
-  .split-item-row input.split-price{ width:70px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; font-family:var(--mono); background:#fff; }
-  .split-del{ color:var(--brick); cursor:pointer; font-size:13px; padding:0 2px; }
-  .add-split-btn{
-    margin-top:6px;
+  .subitem-row input.sub-name{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; background:#fff; }
+  .subitem-row input.sub-price{ width:70px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; font-family:var(--mono); background:#fff; }
+  .sub-save-btn{ font-size:11px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .sub-del-btn{ font-size:11px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
+  .subitem-add-row{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .subitem-add-row input.new-sub-name{ flex:1; min-width:0; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:12px; }
+  .subitem-add-row input.new-sub-price{ width:75px; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:12px; font-family:var(--mono); }
+  .add-subitem-btn{
     background:transparent;
     border:1px dashed var(--line);
     color:var(--accent-dark);
@@ -592,7 +673,65 @@
     font-size:12px;
     font-weight:700;
     cursor:pointer;
+    white-space:nowrap;
   }
+
+  /* 收銀畫面：品項卡片(含顏色/細項按鈕) */
+  .item-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .item-card .item-btn{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-radius:0;
+    padding:12px 10px;
+    text-align:left;
+    cursor:pointer;
+  }
+  .item-card .item-btn:disabled{ cursor:default; }
+  .item-card .item-btn .name{ font-weight:700; font-size:14px; display:block; margin-bottom:4px; }
+  .item-card .item-btn .price{ font-family:var(--mono); font-size:13px; color:var(--accent-dark); }
+  .item-color-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:0 10px 10px;
+  }
+  .color-btn{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:5px 12px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .color-btn:active{ transform:scale(0.95); }
+  .item-sub-row{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:0 10px 10px;
+    border-top:1px dashed var(--line);
+    padding-top:8px;
+  }
+  .sub-btn{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .sub-btn .name{ font-weight:600; font-size:13px; }
+  .sub-btn .price{ font-family:var(--mono); font-size:12px; color:var(--accent-dark); }
 
   /* history tab */
   .stats-bar{
@@ -847,10 +986,13 @@
   <main>
     <!-- 收銀 -->
     <section class="tabpanel active" id="tab-cashier">
-      <div class="section-title">選擇大類別</div>
+      <div class="section-title">選擇分類</div>
+      <div class="cat-chip-row" id="divChipRow"></div>
+
+      <div class="section-title">選擇類別</div>
       <div class="cat-chip-row" id="catChipRow"></div>
 
-      <div class="section-title">點選細項加入訂單</div>
+      <div class="section-title">點選品項加入訂單</div>
       <div class="item-grid" id="itemGrid"></div>
 
       <div class="receipt">
@@ -997,14 +1139,14 @@
 
     <!-- 品項設定 -->
     <section class="tabpanel" id="tab-items">
-      <div class="section-title">新增大類別</div>
+      <div class="section-title">新增分類</div>
       <div class="item-form">
-        <input type="text" id="newCatName" placeholder="類別名稱（例如：桌子、沙發）">
-        <button id="addCatBtn">新增類別</button>
+        <input type="text" id="newDivName" placeholder="分類名稱（例如：客廳、臥室）">
+        <button id="addDivBtn">新增分類</button>
       </div>
 
-      <div class="section-title">類別與細項（可直接修改後按儲存）</div>
-      <div id="categoryList"></div>
+      <div class="section-title">分類 / 類別 / 品項 / 細項（可直接修改後按儲存）</div>
+      <div id="divisionList"></div>
     </section>
 
     <!-- 訂單紀錄 -->
@@ -1103,13 +1245,17 @@
 </script>
 <script>
 (function(){
-  let categories = [];   // {id, name}
-  let items = [];        // {id, name, price, categoryId}
+  let divisions = [];    // 分類: {id, name}
+  let categories = [];   // 類別: {id, name, divisionId}
+  let items = [];        // 品項: {id, name, price, categoryId}
+  let subItems = [];     // 細項: {id, name, price, itemId}
   let orders = [];        // completed orders
   let cart = [];          // {itemId, name, price, qty}
+  let activeDivisionId = null;
   let activeCategoryId = null;
   let cashEdited = false;
   let transferEdited = false;
+  let collapsedDivisions = new Set();  // 品項設定：收起的分類
   let collapsedCats = new Set();      // 品項設定：收起的類別細項清單
   let collapsedMonths = new Set();    // 訂單紀錄：收起的月份
   let collapsedDays = new Set();      // 訂單紀錄：收起的日期
@@ -1149,12 +1295,22 @@
   }
 
   async function loadAll(){
+    try{ const v = await storageGet('divisions'); divisions = v ? JSON.parse(v) : []; }
+    catch(e){ divisions = []; }
     try{ const v = await storageGet('categories'); categories = v ? JSON.parse(v) : []; }
     catch(e){ categories = []; }
     try{ const v = await storageGet('items'); items = v ? JSON.parse(v) : []; }
     catch(e){ items = []; }
+    try{ const v = await storageGet('subItems'); subItems = v ? JSON.parse(v) : []; }
+    catch(e){ subItems = []; }
     try{ const v = await storageGet('orders'); orders = v ? JSON.parse(v) : []; }
     catch(e){ orders = []; }
+  }
+  async function saveDivisions(){
+    await storageSet('divisions', JSON.stringify(divisions));
+    if(fbReady){
+      try{ await catalogRef().set({ divisions }, { merge:true }); }catch(e){ /* 離線時自動排隊，恢復連線後補送 */ }
+    }
   }
   async function saveCategories(){
     await storageSet('categories', JSON.stringify(categories));
@@ -1166,6 +1322,12 @@
     await storageSet('items', JSON.stringify(items));
     if(fbReady){
       try{ await catalogRef().set({ items }, { merge:true }); }catch(e){ /* 離線時自動排隊，恢復連線後補送 */ }
+    }
+  }
+  async function saveSubItems(){
+    await storageSet('subItems', JSON.stringify(subItems));
+    if(fbReady){
+      try{ await catalogRef().set({ subItems }, { merge:true }); }catch(e){ /* 離線時自動排隊，恢復連線後補送 */ }
     }
   }
   async function saveOrders(){ await storageSet('orders', JSON.stringify(orders)); }
@@ -1230,17 +1392,26 @@
       if(!snap.exists) return;
       const data = snap.data();
       let changed = false;
+      if(Array.isArray(data.divisions) && JSON.stringify(data.divisions) !== JSON.stringify(divisions)){
+        divisions = data.divisions; changed = true;
+      }
       if(Array.isArray(data.categories) && JSON.stringify(data.categories) !== JSON.stringify(categories)){
         categories = data.categories; changed = true;
       }
       if(Array.isArray(data.items) && JSON.stringify(data.items) !== JSON.stringify(items)){
         items = data.items; changed = true;
       }
+      if(Array.isArray(data.subItems) && JSON.stringify(data.subItems) !== JSON.stringify(subItems)){
+        subItems = data.subItems; changed = true;
+      }
       if(changed){
+        storageSet('divisions', JSON.stringify(divisions));
         storageSet('categories', JSON.stringify(categories));
         storageSet('items', JSON.stringify(items));
+        storageSet('subItems', JSON.stringify(subItems));
+        if(divisions.length && !divisions.find(d=>d.id===activeDivisionId)) activeDivisionId = divisions[0].id;
         if(categories.length && !categories.find(c=>c.id===activeCategoryId)) activeCategoryId = categories[0].id;
-        renderCategoryChips(); renderItemGrid(); renderCategorySettings(); renderCart();
+        renderDivisionChips(); renderCategoryChips(); renderItemGrid(); renderDivisionSettings(); renderCart();
       }
     }, ()=>{ /* 忽略監聽錯誤，本機資料仍可運作 */ });
   }
@@ -1303,211 +1474,378 @@
   setInterval(tickClock, 30000);
 
   // ================= 品項設定：大類別 + 細項 =================
-  function renderCategorySettings(){
-    const list = $('#categoryList');
-    if(categories.length === 0){
-      list.innerHTML = '<div class="empty-hint">還沒有任何類別，請先在上方新增一個大類別（例如：飲料、主餐）。</div>';
+  function renderDivisionSettings(){
+    const list = $('#divisionList');
+    if(divisions.length === 0){
+      list.innerHTML = '<div class="empty-hint">還沒有任何分類，請先在上方新增一個分類（例如：客廳、臥室）。</div>';
       return;
     }
-    const sortedCategories = categories.slice().sort((a,b)=> a.name.localeCompare(b.name));
-    list.innerHTML = sortedCategories.map(cat=>{
-      const catItems = items.filter(i=>i.categoryId===cat.id)
+    const sortedDivisions = divisions.slice().sort((a,b)=> a.name.localeCompare(b.name));
+    list.innerHTML = sortedDivisions.map(div=>{
+      const divCollapsed = collapsedDivisions.has(div.id);
+      const divCats = categories.filter(c=>c.divisionId===div.id)
         .slice()
         .sort((a,b)=> a.name.localeCompare(b.name));
-      const collapsed = collapsedCats.has(cat.id);
-      const itemsHtml = catItems.length === 0
-        ? '<div class="empty-hint" style="padding:8px 2px;">這個類別還沒有細項。</div>'
-        : catItems.map(it=>{
-            const splitItems = it.splitItems || [];
-            const splitRowsHtml = splitItems.map((s,idx)=>`
-              <div class="split-item-row" data-idx="${idx}">
-                <input type="text" class="split-name" placeholder="拆價名稱" value="${escapeHtml(s.name||'')}">
-                <input type="number" class="split-price" placeholder="價錢" value="${s.price!==undefined && s.price!==null ? s.price : ''}">
-                <span class="split-del">✕</span>
-              </div>
-            `).join('');
+
+      const catsHtml = divCats.length === 0
+        ? '<div class="empty-hint" style="padding:8px 2px;">這個分類還沒有類別。</div>'
+        : divCats.map(cat=>{
+            const catCollapsed = collapsedCats.has(cat.id);
+            const catItems = items.filter(i=>i.categoryId===cat.id)
+              .slice()
+              .sort((a,b)=> a.name.localeCompare(b.name));
+
+            const itemsHtml = catItems.length === 0
+              ? '<div class="empty-hint" style="padding:8px 2px;">這個類別還沒有品項。</div>'
+              : catItems.map(it=>{
+                  const colors = it.colors || [];
+                  const colorTagsHtml = colors.map((c,idx)=>`
+                    <span class="color-tag" data-idx="${idx}">${escapeHtml(c)} <span class="color-tag-del">✕</span></span>
+                  `).join('');
+
+                  const itemSubItems = subItems.filter(s=>s.itemId===it.id)
+                    .slice()
+                    .sort((a,b)=> a.name.localeCompare(b.name));
+                  const subRowsHtml = itemSubItems.map(s=>`
+                    <div class="subitem-row" data-id="${s.id}">
+                      <input type="text" class="sub-name" value="${escapeHtml(s.name)}">
+                      <input type="number" class="sub-price" value="${s.price}">
+                      <span class="sub-save-btn">儲存</span>
+                      <span class="sub-del-btn">刪除</span>
+                    </div>
+                  `).join('');
+
+                  return `
+                  <div class="item-container" data-id="${it.id}">
+                    <div class="item-row">
+                      <input type="text" name="ename" value="${escapeHtml(it.name)}">
+                      <input type="number" name="eprice" value="${it.price}">
+                      <span class="save-btn">儲存</span>
+                      <span class="del-btn">刪除</span>
+                    </div>
+                    <label class="color-toggle-label">
+                      <input type="checkbox" class="ecolor" ${it.colorEnabled ? 'checked' : ''}> 顏色
+                    </label>
+                    <div class="color-block" style="display:${it.colorEnabled ? 'block' : 'none'};">
+                      <div class="color-tags">${colorTagsHtml}</div>
+                      <div class="color-add-row">
+                        <input type="text" class="new-color-input" placeholder="顏色名稱（例如：黑色）">
+                        <button class="add-color-btn" type="button">新增</button>
+                      </div>
+                    </div>
+                    <div class="subitem-block">
+                      <div class="subitem-label">細項</div>
+                      <div class="subitem-rows">${subRowsHtml}</div>
+                      <div class="subitem-add-row">
+                        <input type="text" class="new-sub-name" placeholder="細項名稱">
+                        <input type="number" class="new-sub-price" placeholder="價格" inputmode="decimal">
+                        <button class="add-subitem-btn" type="button">＋ 新增細項</button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                }).join('');
+
             return `
-            <div class="item-container" data-id="${it.id}">
-              <div class="item-row">
-                <input type="text" name="ename" value="${escapeHtml(it.name)}">
-                <input type="number" name="eprice" value="${it.price}">
-                <span class="save-btn">儲存</span>
-                <span class="del-btn">刪除</span>
+              <div class="cat-card" data-catid="${cat.id}">
+                <div class="cat-header">
+                  <span class="cat-toggle" data-catid="${cat.id}">${catCollapsed ? '▸' : '▾'}</span>
+                  <input type="text" class="cat-name" value="${escapeHtml(cat.name)}">
+                  <span class="save-btn">儲存</span>
+                  <span class="del-btn">刪除類別</span>
+                </div>
+                <div class="cat-item-form">
+                  <input type="text" name="iname" placeholder="品項名稱">
+                  <input type="number" name="iprice" placeholder="價格" inputmode="decimal">
+                  <button class="add-item-btn">新增品項</button>
+                </div>
+                <div class="cat-items" style="display:${catCollapsed ? 'none' : 'block'};">${itemsHtml}</div>
               </div>
-              <label class="split-toggle-label">
-                <input type="checkbox" class="esplit" ${it.splitEnabled ? 'checked' : ''}> 拆價
-              </label>
-              <div class="split-block" style="display:${it.splitEnabled ? 'block' : 'none'};">
-                <div class="split-items">${splitRowsHtml}</div>
-                <button class="add-split-btn" type="button">＋ 新增拆價項目</button>
-              </div>
-            </div>
-          `;
+            `;
           }).join('');
+
       return `
-        <div class="cat-card" data-catid="${cat.id}">
-          <div class="cat-header">
-            <span class="cat-toggle" data-catid="${cat.id}">${collapsed ? '▸' : '▾'}</span>
-            <input type="text" class="cat-name" value="${escapeHtml(cat.name)}">
+        <div class="div-card" data-divid="${div.id}">
+          <div class="div-header">
+            <span class="div-toggle" data-divid="${div.id}">${divCollapsed ? '▸' : '▾'}</span>
+            <input type="text" class="div-name" value="${escapeHtml(div.name)}">
             <span class="save-btn">儲存</span>
-            <span class="del-btn">刪除類別</span>
+            <span class="del-btn">刪除分類</span>
           </div>
           <div class="cat-item-form">
-            <input type="text" name="iname" placeholder="細項名稱">
-            <input type="number" name="iprice" placeholder="價格" inputmode="decimal">
-            <button class="add-item-btn">新增細項</button>
+            <input type="text" name="cname" placeholder="類別名稱">
+            <button class="add-cat-btn">新增類別</button>
           </div>
-          <div class="cat-items" style="display:${collapsed ? 'none' : 'block'};">${itemsHtml}</div>
+          <div class="div-body" style="display:${divCollapsed ? 'none' : 'block'};">${catsHtml}</div>
         </div>
       `;
     }).join('');
 
+    // ---- 分類 摺疊 ----
+    $$('.div-toggle', list).forEach(toggle=>{
+      toggle.addEventListener('click', ()=>{
+        const divId = toggle.dataset.divid;
+        if(collapsedDivisions.has(divId)) collapsedDivisions.delete(divId);
+        else collapsedDivisions.add(divId);
+        renderDivisionSettings();
+      });
+    });
+
+    // ---- 類別 摺疊 ----
     $$('.cat-toggle', list).forEach(toggle=>{
       toggle.addEventListener('click', ()=>{
         const catId = toggle.dataset.catid;
         if(collapsedCats.has(catId)) collapsedCats.delete(catId);
         else collapsedCats.add(catId);
-        renderCategorySettings();
+        renderDivisionSettings();
       });
     });
 
-    $$('.cat-card', list).forEach(card=>{
-      const catId = card.dataset.catid;
+    $$('.div-card', list).forEach(divCard=>{
+      const divId = divCard.dataset.divid;
 
-      // 類別 儲存/刪除
-      $('.cat-header .save-btn', card).addEventListener('click', async ()=>{
-        const nameEl = $('.cat-header .cat-name', card);
+      // 分類 儲存/刪除
+      $('.div-header .save-btn', divCard).addEventListener('click', async ()=>{
+        const nameEl = $('.div-header .div-name', divCard);
+        const name = nameEl.value.trim();
+        if(!name){ toast('請輸入分類名稱'); return; }
+        const div = divisions.find(d=>d.id===divId);
+        div.name = name;
+        await saveDivisions();
+        renderDivisionSettings();
+        renderDivisionChips();
+        toast('已更新分類');
+      });
+      $('.div-header .del-btn', divCard).addEventListener('click', async ()=>{
+        if(!confirm('刪除這個分類會一併刪除底下所有類別、品項與細項，確定要刪除嗎？')) return;
+        const removedCatIds = categories.filter(c=>c.divisionId===divId).map(c=>c.id);
+        const removedItemIds = items.filter(i=>removedCatIds.includes(i.categoryId)).map(i=>i.id);
+        divisions = divisions.filter(d=>d.id!==divId);
+        categories = categories.filter(c=>c.divisionId!==divId);
+        items = items.filter(i=>!removedCatIds.includes(i.categoryId));
+        subItems = subItems.filter(s=>!removedItemIds.includes(s.itemId));
+        cart = cart.filter(c=> !removedItemIds.some(id=> c.itemId===id || c.itemId.indexOf(id+'::')===0));
+        collapsedDivisions.delete(divId);
+        await saveDivisions(); await saveCategories(); await saveItems(); await saveSubItems();
+        if(activeDivisionId===divId) activeDivisionId = divisions.length ? divisions[0].id : null;
+        renderDivisionSettings();
+        renderDivisionChips(); renderCategoryChips(); renderItemGrid(); renderCart();
+        toast('已刪除分類');
+      });
+
+      // 新增類別
+      $('.add-cat-btn', divCard).addEventListener('click', async ()=>{
+        const nameEl = $('.cat-item-form input[name="cname"]', divCard);
         const name = nameEl.value.trim();
         if(!name){ toast('請輸入類別名稱'); return; }
-        const cat = categories.find(c=>c.id===catId);
-        cat.name = name;
+        categories.push({ id: uid(), name, divisionId: divId });
         await saveCategories();
-        renderCategorySettings();
+        nameEl.value = '';
+        renderDivisionSettings();
         renderCategoryChips();
-        toast('已更新類別');
-      });
-      $('.cat-header .del-btn', card).addEventListener('click', async ()=>{
-        if(!confirm('刪除這個類別會一併刪除底下所有細項，確定要刪除嗎？')) return;
-        const removedItemIds = items.filter(i=>i.categoryId===catId).map(i=>i.id);
-        categories = categories.filter(c=>c.id!==catId);
-        items = items.filter(i=>i.categoryId!==catId);
-        cart = cart.filter(c=>!removedItemIds.includes(c.itemId));
-        collapsedCats.delete(catId);
-        await saveCategories();
-        await saveItems();
-        if(activeCategoryId===catId) activeCategoryId = categories.length ? categories[0].id : null;
-        renderCategorySettings();
-        renderCategoryChips();
-        renderItemGrid();
-        renderCart();
-        toast('已刪除類別');
+        toast('已新增類別');
       });
 
-      // 新增細項
-      $('.add-item-btn', card).addEventListener('click', async ()=>{
-        const nameEl = $('.cat-item-form input[name="iname"]', card);
-        const priceEl = $('.cat-item-form input[name="iprice"]', card);
-        const name = nameEl.value.trim();
-        const price = parseFloat(priceEl.value);
-        if(!name || isNaN(price) || price < 0){ toast('請輸入正確的細項名稱與價格'); return; }
-        items.push({ id: uid(), name, price, categoryId: catId, splitEnabled:false, splitItems:[] });
-        await saveItems();
-        nameEl.value=''; priceEl.value='';
-        renderCategorySettings();
-        renderItemGrid();
-        toast('已新增細項');
-      });
+      $$('.cat-card', divCard).forEach(catCard=>{
+        const catId = catCard.dataset.catid;
 
-      // 細項 (含拆價) 儲存/刪除
-      $$('.item-container', card).forEach(container=>{
-        const id = container.dataset.id;
-        const row = $('.item-row', container);
-        const splitBlock = $('.split-block', container);
-        const splitItemsWrap = $('.split-items', container);
-
-        $('.esplit', container).addEventListener('change', (e)=>{
-          splitBlock.style.display = e.target.checked ? 'block' : 'none';
+        // 類別 儲存/刪除
+        $('.cat-header .save-btn', catCard).addEventListener('click', async ()=>{
+          const nameEl = $('.cat-header .cat-name', catCard);
+          const name = nameEl.value.trim();
+          if(!name){ toast('請輸入類別名稱'); return; }
+          const cat = categories.find(c=>c.id===catId);
+          cat.name = name;
+          await saveCategories();
+          renderDivisionSettings();
+          renderCategoryChips();
+          toast('已更新類別');
+        });
+        $('.cat-header .del-btn', catCard).addEventListener('click', async ()=>{
+          if(!confirm('刪除這個類別會一併刪除底下所有品項與細項，確定要刪除嗎？')) return;
+          const removedItemIds = items.filter(i=>i.categoryId===catId).map(i=>i.id);
+          categories = categories.filter(c=>c.id!==catId);
+          items = items.filter(i=>i.categoryId!==catId);
+          subItems = subItems.filter(s=>!removedItemIds.includes(s.itemId));
+          cart = cart.filter(c=> !removedItemIds.some(id=> c.itemId===id || c.itemId.indexOf(id+'::')===0));
+          collapsedCats.delete(catId);
+          await saveCategories(); await saveItems(); await saveSubItems();
+          if(activeCategoryId===catId) activeCategoryId = null;
+          renderDivisionSettings();
+          renderCategoryChips(); renderItemGrid(); renderCart();
+          toast('已刪除類別');
         });
 
-        $('.add-split-btn', container).addEventListener('click', ()=>{
-          const idx = $$('.split-item-row', splitItemsWrap).length;
-          const div = document.createElement('div');
-          div.className = 'split-item-row';
-          div.dataset.idx = idx;
-          div.innerHTML = `
-            <input type="text" class="split-name" placeholder="拆價名稱">
-            <input type="number" class="split-price" placeholder="價錢">
-            <span class="split-del">✕</span>
-          `;
-          splitItemsWrap.appendChild(div);
-        });
-
-        splitItemsWrap.addEventListener('click', (e)=>{
-          if(e.target.classList.contains('split-del')){
-            e.target.closest('.split-item-row').remove();
-          }
-        });
-
-        $('.save-btn', row).addEventListener('click', async ()=>{
-          const name = $('input[name="ename"]', row).value.trim();
-          const price = parseFloat($('input[name="eprice"]', row).value);
-          if(!name || isNaN(price)){ toast('請輸入正確的名稱與價格'); return; }
-          const splitEnabled = $('.esplit', container).checked;
-          const splitItems = $$('.split-item-row', splitItemsWrap).map(r=>{
-            const sName = $('.split-name', r).value.trim();
-            const sPrice = parseFloat($('.split-price', r).value);
-            return { name: sName, price: isNaN(sPrice) ? 0 : sPrice };
-          }).filter(s=> s.name || s.price);
-          const it = items.find(i=>i.id===id);
-          it.name = name; it.price = price;
-          it.splitEnabled = splitEnabled;
-          it.splitItems = splitEnabled ? splitItems : [];
+        // 新增品項
+        $('.add-item-btn', catCard).addEventListener('click', async ()=>{
+          const nameEl = $('.cat-item-form input[name="iname"]', catCard);
+          const priceEl = $('.cat-item-form input[name="iprice"]', catCard);
+          const name = nameEl.value.trim();
+          const price = parseFloat(priceEl.value);
+          if(!name || isNaN(price) || price < 0){ toast('請輸入正確的品項名稱與價格'); return; }
+          items.push({ id: uid(), name, price, categoryId: catId, colorEnabled:false, colors:[] });
           await saveItems();
-          cart.forEach(c=>{ if(c.itemId===id){ c.name=name; c.price=price; } });
-          renderCategorySettings();
+          nameEl.value=''; priceEl.value='';
+          renderDivisionSettings();
           renderItemGrid();
-          renderCart();
-          toast('已更新細項');
+          toast('已新增品項');
         });
-        $('.del-btn', row).addEventListener('click', async ()=>{
-          items = items.filter(i=>i.id!==id);
-          cart = cart.filter(c=>c.itemId!==id);
-          await saveItems();
-          renderCategorySettings();
-          renderItemGrid();
-          renderCart();
-          toast('已刪除細項');
+
+        // 品項（含顏色、細項）
+        $$('.item-container', catCard).forEach(container=>{
+          const id = container.dataset.id;
+          const row = $('.item-row', container);
+          const colorBlock = $('.color-block', container);
+          const colorTagsWrap = $('.color-tags', container);
+          const subRowsWrap = $('.subitem-rows', container);
+
+          $('.ecolor', container).addEventListener('change', (e)=>{
+            colorBlock.style.display = e.target.checked ? 'block' : 'none';
+          });
+
+          $('.add-color-btn', container).addEventListener('click', ()=>{
+            const input = $('.new-color-input', container);
+            const name = input.value.trim();
+            if(!name) return;
+            const idx = $$('.color-tag', colorTagsWrap).length;
+            const span = document.createElement('span');
+            span.className = 'color-tag';
+            span.dataset.idx = idx;
+            span.innerHTML = escapeHtml(name) + ' <span class="color-tag-del">✕</span>';
+            colorTagsWrap.appendChild(span);
+            input.value = '';
+          });
+          colorTagsWrap.addEventListener('click', (e)=>{
+            if(e.target.classList.contains('color-tag-del')){
+              e.target.closest('.color-tag').remove();
+            }
+          });
+
+          $('.save-btn', row).addEventListener('click', async ()=>{
+            const name = $('input[name="ename"]', row).value.trim();
+            const price = parseFloat($('input[name="eprice"]', row).value);
+            if(!name || isNaN(price)){ toast('請輸入正確的名稱與價格'); return; }
+            const colorEnabled = $('.ecolor', container).checked;
+            const colors = $$('.color-tag', colorTagsWrap).map(tag=> tag.textContent.replace('✕','').trim()).filter(Boolean);
+            const it = items.find(i=>i.id===id);
+            it.name = name; it.price = price;
+            it.colorEnabled = colorEnabled;
+            it.colors = colorEnabled ? colors : [];
+            await saveItems();
+            cart.forEach(c=>{ if(c.itemId===id){ c.name=name; c.price=price; } });
+            renderDivisionSettings();
+            renderItemGrid();
+            renderCart();
+            toast('已更新品項');
+          });
+          $('.del-btn', row).addEventListener('click', async ()=>{
+            items = items.filter(i=>i.id!==id);
+            subItems = subItems.filter(s=>s.itemId!==id);
+            cart = cart.filter(c=> c.itemId!==id && c.itemId.indexOf(id+'::')!==0);
+            await saveItems(); await saveSubItems();
+            renderDivisionSettings();
+            renderItemGrid();
+            renderCart();
+            toast('已刪除品項');
+          });
+
+          // 新增細項
+          $('.add-subitem-btn', container).addEventListener('click', async ()=>{
+            const nameEl = $('.new-sub-name', container);
+            const priceEl = $('.new-sub-price', container);
+            const name = nameEl.value.trim();
+            const price = parseFloat(priceEl.value);
+            if(!name || isNaN(price) || price < 0){ toast('請輸入正確的細項名稱與價格'); return; }
+            subItems.push({ id: uid(), name, price, itemId: id });
+            await saveSubItems();
+            nameEl.value=''; priceEl.value='';
+            renderDivisionSettings();
+            renderItemGrid();
+            toast('已新增細項');
+          });
+
+          // 細項 儲存/刪除
+          $$('.subitem-row', subRowsWrap).forEach(subRow=>{
+            const subId = subRow.dataset.id;
+            $('.sub-save-btn', subRow).addEventListener('click', async ()=>{
+              const name = $('.sub-name', subRow).value.trim();
+              const price = parseFloat($('.sub-price', subRow).value);
+              if(!name || isNaN(price)){ toast('請輸入正確的細項名稱與價格'); return; }
+              const s = subItems.find(x=>x.id===subId);
+              s.name = name; s.price = price;
+              await saveSubItems();
+              cart.forEach(c=>{ if(c.itemId===subId){ c.name=name; c.price=price; } });
+              renderDivisionSettings();
+              renderItemGrid();
+              renderCart();
+              toast('已更新細項');
+            });
+            $('.sub-del-btn', subRow).addEventListener('click', async ()=>{
+              subItems = subItems.filter(s=>s.id!==subId);
+              cart = cart.filter(c=>c.itemId!==subId);
+              await saveSubItems();
+              renderDivisionSettings();
+              renderItemGrid();
+              renderCart();
+              toast('已刪除細項');
+            });
+          });
         });
       });
     });
   }
 
-  $('#addCatBtn').addEventListener('click', async ()=>{
-    const nameEl = $('#newCatName');
+  $('#addDivBtn').addEventListener('click', async ()=>{
+    const nameEl = $('#newDivName');
     const name = nameEl.value.trim();
-    if(!name){ toast('請輸入類別名稱'); return; }
-    const cat = { id: uid(), name };
-    categories.push(cat);
-    await saveCategories();
+    if(!name){ toast('請輸入分類名稱'); return; }
+    const div = { id: uid(), name };
+    divisions.push(div);
+    await saveDivisions();
     nameEl.value = '';
-    if(!activeCategoryId) activeCategoryId = cat.id;
-    renderCategorySettings();
-    renderCategoryChips();
-    renderItemGrid();
-    toast('已新增類別');
+    if(!activeDivisionId) activeDivisionId = div.id;
+    renderDivisionSettings();
+    renderDivisionChips();
+    toast('已新增分類');
   });
+
+  // ================= 收銀：分類 chips =================
+  function renderDivisionChips(){
+    const row = $('#divChipRow');
+    if(divisions.length === 0){
+      row.innerHTML = '<div class="empty-hint">尚無分類，請至「品項設定」新增分類。</div>';
+      return;
+    }
+    if(!activeDivisionId || !divisions.find(d=>d.id===activeDivisionId)){
+      activeDivisionId = divisions[0].id;
+    }
+    const sortedDivisions = divisions.slice().sort((a,b)=> a.name.localeCompare(b.name));
+    row.innerHTML = sortedDivisions.map(div=>`
+      <button class="cat-chip ${div.id===activeDivisionId ? 'active' : ''}" data-id="${div.id}">${escapeHtml(div.name)}</button>
+    `).join('');
+    $$('.cat-chip', row).forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        activeDivisionId = chip.dataset.id;
+        activeCategoryId = null;
+        renderDivisionChips();
+        renderCategoryChips();
+        renderItemGrid();
+      });
+    });
+  }
 
   // ================= 收銀：大類別 chips =================
   function renderCategoryChips(){
     const row = $('#catChipRow');
-    if(categories.length === 0){
-      row.innerHTML = '<div class="empty-hint">尚無類別，請至「品項設定」新增大類別。</div>';
+    const divCats = categories.filter(c=>c.divisionId===activeDivisionId);
+    if(divCats.length === 0){
+      row.innerHTML = '<div class="empty-hint">這個分類還沒有類別，請至「品項設定」新增。</div>';
       return;
     }
-    if(!activeCategoryId || !categories.find(c=>c.id===activeCategoryId)){
-      activeCategoryId = categories[0].id;
+    if(!activeCategoryId || !divCats.find(c=>c.id===activeCategoryId)){
+      activeCategoryId = divCats[0].id;
     }
-    const sortedCategories = categories.slice().sort((a,b)=> a.name.localeCompare(b.name));
+    const sortedCategories = divCats.slice().sort((a,b)=> a.name.localeCompare(b.name));
     row.innerHTML = sortedCategories.map(cat=>`
       <button class="cat-chip ${cat.id===activeCategoryId ? 'active' : ''}" data-id="${cat.id}">${escapeHtml(cat.name)}</button>
     `).join('');
@@ -1523,48 +1861,85 @@
   // ================= 收銀：細項 grid =================
   function renderItemGrid(){
     const grid = $('#itemGrid');
-    if(categories.length === 0){
-      grid.innerHTML = '<div class="empty-hint">請先到「品項設定」新增大類別與細項。</div>';
+    if(divisions.length === 0){
+      grid.innerHTML = '<div class="empty-hint">請先到「品項設定」新增分類、類別與品項。</div>';
+      return;
+    }
+    if(!activeCategoryId){
+      grid.innerHTML = '<div class="empty-hint">請先選擇類別。</div>';
       return;
     }
     const list = items.filter(i=>i.categoryId===activeCategoryId)
       .slice()
       .sort((a,b)=> a.name.localeCompare(b.name));
     if(list.length === 0){
-      grid.innerHTML = '<div class="empty-hint">這個類別還沒有細項，請至「品項設定」新增。</div>';
+      grid.innerHTML = '<div class="empty-hint">這個類別還沒有品項，請至「品項設定」新增。</div>';
       return;
     }
-    grid.innerHTML = list.map(it => `
-      <button class="item-btn" data-id="${it.id}">
-        <span class="name">${escapeHtml(it.name)}</span>
-        <span class="price">${fmt(it.price)}</span>
-      </button>
-    `).join('');
+    grid.innerHTML = list.map(it=>{
+      const colors = (it.colorEnabled && it.colors && it.colors.length) ? it.colors : [];
+      const itemSubItems = subItems.filter(s=>s.itemId===it.id)
+        .slice()
+        .sort((a,b)=> a.name.localeCompare(b.name));
+
+      const colorHtml = colors.length
+        ? `<div class="item-color-row">${colors.map(c=>`<button class="color-btn" data-id="${it.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>`
+        : '';
+      const subHtml = itemSubItems.length
+        ? `<div class="item-sub-row">${itemSubItems.map(s=>`
+            <button class="sub-btn" data-id="${s.id}">
+              <span class="name">${escapeHtml(s.name)}</span>
+              <span class="price">${fmt(s.price)}</span>
+            </button>
+          `).join('')}</div>`
+        : '';
+
+      return `
+        <div class="item-card">
+          <button class="item-btn" data-id="${it.id}" ${colors.length ? 'disabled' : ''}>
+            <span class="name">${escapeHtml(it.name)}</span>
+            <span class="price">${fmt(it.price)}</span>
+          </button>
+          ${colorHtml}
+          ${subHtml}
+        </div>
+      `;
+    }).join('');
+
     $$('.item-btn', grid).forEach(b=>{
-      b.addEventListener('click', ()=> addToCart(b.dataset.id));
+      if(b.disabled) return;
+      b.addEventListener('click', ()=> addItemToCart(b.dataset.id));
+    });
+    $$('.color-btn', grid).forEach(b=>{
+      b.addEventListener('click', ()=> addItemToCart(b.dataset.id, b.dataset.color));
+    });
+    $$('.sub-btn', grid).forEach(b=>{
+      b.addEventListener('click', ()=> addSubItemToCart(b.dataset.id));
     });
   }
 
   // ================= 收銀：購物車 =================
-  function addToCart(itemId){
+  function addLineToCart(lineId, name, price){
+    const line = cart.find(c=>c.itemId===lineId);
+    if(line){ line.qty += 1; }
+    else{ cart.push({ itemId: lineId, name, price, qty:1 }); }
+    renderCart();
+  }
+
+  function addItemToCart(itemId, color){
     const it = items.find(i=>i.id===itemId);
     if(!it) return;
-    const line = cart.find(c=>c.itemId===itemId);
-    if(line){ line.qty += 1; }
-    else{ cart.push({ itemId, name:it.name, price:it.price, qty:1 }); }
-
-    // 若該品項有勾選「拆價」，點選時自動一併把拆價項目加進購物車
-    if(it.splitEnabled && it.splitItems && it.splitItems.length){
-      it.splitItems.forEach((s, idx)=>{
-        const splitId = itemId + '::split::' + idx;
-        const splitLine = cart.find(c=>c.itemId===splitId);
-        if(splitLine){ splitLine.qty += 1; }
-        else{
-          cart.push({ itemId: splitId, name: s.name + '（拆價）', price: s.price || 0, qty: 1 });
-        }
-      });
+    if(color){
+      addLineToCart(itemId + '::color::' + color, it.name + '（' + color + '）', it.price);
+    } else {
+      addLineToCart(itemId, it.name, it.price);
     }
-    renderCart();
+  }
+
+  function addSubItemToCart(subId){
+    const s = subItems.find(x=>x.id===subId);
+    if(!s) return;
+    addLineToCart(subId, s.name, s.price);
   }
 
   function computeSubtotal(){
@@ -2321,10 +2696,11 @@
   // ---------- init ----------
   (async function init(){
     await loadAll();
-    if(categories.length) activeCategoryId = categories[0].id;
+    if(divisions.length) activeDivisionId = divisions[0].id;
+    renderDivisionChips();
     renderCategoryChips();
     renderItemGrid();
-    renderCategorySettings();
+    renderDivisionSettings();
     renderCart();
     renderHistory();
     renderDaily();

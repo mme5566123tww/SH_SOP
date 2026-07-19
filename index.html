@@ -1533,32 +1533,14 @@
                     .slice()
                     .sort((a,b)=> a.name.localeCompare(b.name));
                   const hasSubs = itemSubItems.length > 0;
-                  const subRowsHtml = itemSubItems.map(s=>{
-                    const sColors = s.colors || [];
-                    const sColorTagsHtml = sColors.map((c,idx)=>`
-                      <span class="color-tag" data-idx="${idx}">${escapeHtml(c)} <span class="color-tag-del">✕</span></span>
-                    `).join('');
-                    return `
-                    <div class="subitem-container" data-id="${s.id}">
-                      <div class="subitem-row">
-                        <input type="text" class="sub-name" value="${escapeHtml(s.name)}">
-                        <input type="number" class="sub-price" value="${s.price}">
-                        <span class="sub-save-btn">儲存</span>
-                        <span class="sub-del-btn">刪除</span>
-                      </div>
-                      <label class="color-toggle-label">
-                        <input type="checkbox" class="sub-ecolor" ${s.colorEnabled ? 'checked' : ''}> 顏色
-                      </label>
-                      <div class="color-block" style="display:${s.colorEnabled ? 'block' : 'none'};">
-                        <div class="color-tags">${sColorTagsHtml}</div>
-                        <div class="color-add-row">
-                          <input type="text" class="new-color-input" placeholder="顏色名稱（例如：黑色）">
-                          <button class="add-color-btn" type="button">新增</button>
-                        </div>
-                      </div>
+                  const subRowsHtml = itemSubItems.map(s=>`
+                    <div class="subitem-row" data-id="${s.id}">
+                      <input type="text" class="sub-name" value="${escapeHtml(s.name)}">
+                      <input type="number" class="sub-price" value="${s.price}">
+                      <span class="sub-save-btn">儲存</span>
+                      <span class="sub-del-btn">刪除</span>
                     </div>
-                  `;
-                  }).join('');
+                  `).join('');
 
                   return `
                   <div class="item-container" data-id="${it.id}">
@@ -1807,7 +1789,7 @@
             const name = nameEl.value.trim();
             const price = parseFloat(priceEl.value);
             if(!name || isNaN(price) || price < 0){ toast('請輸入正確的細項名稱與價格'); return; }
-            subItems.push({ id: uid(), name, price, itemId: id, colorEnabled:false, colors:[] });
+            subItems.push({ id: uid(), name, price, itemId: id });
             await saveSubItems();
             nameEl.value=''; priceEl.value='';
             renderDivisionSettings();
@@ -1815,42 +1797,15 @@
             toast('已新增細項');
           });
 
-          // 細項（含顏色）儲存/刪除
-          $$('.subitem-container', subRowsWrap).forEach(subContainer=>{
-            const subId = subContainer.dataset.id;
-            const subRow = $('.subitem-row', subContainer);
-            const subColorBlock = $('.color-block', subContainer);
-            const subColorTagsWrap = $('.color-tags', subContainer);
-
-            $('.sub-ecolor', subContainer).addEventListener('change', (e)=>{
-              subColorBlock.style.display = e.target.checked ? 'block' : 'none';
-            });
-            $('.add-color-btn', subContainer).addEventListener('click', ()=>{
-              const input = $('.new-color-input', subContainer);
-              const name = input.value.trim();
-              if(!name) return;
-              const span = document.createElement('span');
-              span.className = 'color-tag';
-              span.innerHTML = escapeHtml(name) + ' <span class="color-tag-del">✕</span>';
-              subColorTagsWrap.appendChild(span);
-              input.value = '';
-            });
-            subColorTagsWrap.addEventListener('click', (e)=>{
-              if(e.target.classList.contains('color-tag-del')){
-                e.target.closest('.color-tag').remove();
-              }
-            });
-
+          // 細項 儲存/刪除
+          $$('.subitem-row', subRowsWrap).forEach(subRow=>{
+            const subId = subRow.dataset.id;
             $('.sub-save-btn', subRow).addEventListener('click', async ()=>{
               const name = $('.sub-name', subRow).value.trim();
               const price = parseFloat($('.sub-price', subRow).value);
               if(!name || isNaN(price)){ toast('請輸入正確的細項名稱與價格'); return; }
-              const colorEnabled = $('.sub-ecolor', subContainer).checked;
-              const colors = $$('.color-tag', subColorTagsWrap).map(tag=> tag.textContent.replace('✕','').trim()).filter(Boolean);
               const s = subItems.find(x=>x.id===subId);
               s.name = name; s.price = price;
-              s.colorEnabled = colorEnabled;
-              s.colors = colorEnabled ? colors : [];
               await saveSubItems();
               cart.forEach(c=>{ if(c.itemId===subId){ c.name=name; c.price=price; } });
               renderDivisionSettings();
@@ -1962,20 +1917,19 @@
       const hasSubs = itemSubItems.length > 0;
       const expanded = expandedItems.has(it.id);
 
-      const colorHtml = colors.length
+      const colorHtml = (colors.length && !hasSubs)
         ? `<div class="item-color-row">${colors.map(c=>`<button class="color-btn" data-id="${it.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>`
         : '';
       const subHtml = hasSubs
         ? `<div class="item-sub-row" style="display:${expanded ? 'flex' : 'none'};">${itemSubItems.map(s=>{
-            const sColors = (s.colorEnabled && s.colors && s.colors.length) ? s.colors : [];
-            if(sColors.length){
+            if(colors.length){
               return `
                 <div class="sub-card">
                   <div class="sub-card-head">
                     <span class="name">${escapeHtml(s.name)}</span>
                     <span class="price sub-hint">請選擇顏色</span>
                   </div>
-                  <div class="item-color-row">${sColors.map(c=>`<button class="sub-color-btn" data-id="${s.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>
+                  <div class="item-color-row">${colors.map(c=>`<button class="sub-color-btn" data-id="${s.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>
                 </div>
               `;
             }

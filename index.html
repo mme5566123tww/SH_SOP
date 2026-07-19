@@ -553,6 +553,7 @@
   }
   .item-row input[name="ename"]{ flex:1; min-width:0; border:1px solid transparent; padding:6px 8px; border-radius:6px; font-size:13px; background:transparent; }
   .item-row input[name="eprice"]{ width:75px; border:1px solid transparent; padding:6px 8px; border-radius:6px; font-family:var(--mono); background:transparent; text-align:right; font-size:13px; }
+  .item-row input[name="eprice"]:disabled{ background:var(--paper); color:var(--ink-soft); font-size:10px; }
   .item-row input:focus{ border-color:var(--line); background:#fff; }
   .item-row .save-btn{ font-size:11px; color:var(--accent-dark); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
   .item-row .del-btn{ font-size:11px; color:var(--brick); cursor:pointer; font-weight:700; padding:4px 6px; white-space:nowrap; }
@@ -695,6 +696,7 @@
   .item-card .item-btn:disabled{ cursor:default; }
   .item-card .item-btn .name{ font-weight:700; font-size:14px; display:block; margin-bottom:4px; }
   .item-card .item-btn .price{ font-family:var(--mono); font-size:13px; color:var(--accent-dark); }
+  .item-card .item-btn .price.sub-hint{ color:var(--ink-soft); font-family:var(--disp); font-size:12px; font-weight:600; }
   .item-color-row{
     display:flex;
     flex-wrap:wrap;
@@ -1256,6 +1258,7 @@
   let cashEdited = false;
   let transferEdited = false;
   let collapsedDivisions = new Set();  // 品項設定：收起的分類
+  let expandedItems = new Set();       // 收銀：已展開細項清單的品項
   let collapsedCats = new Set();      // 品項設定：收起的類別細項清單
   let collapsedMonths = new Set();    // 訂單紀錄：收起的月份
   let collapsedDays = new Set();      // 訂單紀錄：收起的日期
@@ -1506,6 +1509,7 @@
                   const itemSubItems = subItems.filter(s=>s.itemId===it.id)
                     .slice()
                     .sort((a,b)=> a.name.localeCompare(b.name));
+                  const hasSubs = itemSubItems.length > 0;
                   const subRowsHtml = itemSubItems.map(s=>`
                     <div class="subitem-row" data-id="${s.id}">
                       <input type="text" class="sub-name" value="${escapeHtml(s.name)}">
@@ -1519,7 +1523,7 @@
                   <div class="item-container" data-id="${it.id}">
                     <div class="item-row">
                       <input type="text" name="ename" value="${escapeHtml(it.name)}">
-                      <input type="number" name="eprice" value="${it.price}">
+                      <input type="number" name="eprice" value="${hasSubs ? '' : it.price}" ${hasSubs ? 'disabled placeholder="由細項決定價錢"' : ''}>
                       <span class="save-btn">儲存</span>
                       <span class="del-btn">刪除</span>
                     </div>
@@ -1534,7 +1538,7 @@
                       </div>
                     </div>
                     <div class="subitem-block">
-                      <div class="subitem-label">細項</div>
+                      <div class="subitem-label">細項${hasSubs ? '（有細項時，品項本身不需填價錢）' : ''}</div>
                       <div class="subitem-rows">${subRowsHtml}</div>
                       <div class="subitem-add-row">
                         <input type="text" class="new-sub-name" placeholder="細項名稱">
@@ -1723,8 +1727,14 @@
 
           $('.save-btn', row).addEventListener('click', async ()=>{
             const name = $('input[name="ename"]', row).value.trim();
-            const price = parseFloat($('input[name="eprice"]', row).value);
-            if(!name || isNaN(price)){ toast('請輸入正確的名稱與價格'); return; }
+            const hasSubsNow = subItems.some(s=>s.itemId===id);
+            let price = 0;
+            if(hasSubsNow){
+              if(!name){ toast('請輸入正確的名稱'); return; }
+            } else {
+              price = parseFloat($('input[name="eprice"]', row).value);
+              if(!name || isNaN(price)){ toast('請輸入正確的名稱與價格'); return; }
+            }
             const colorEnabled = $('.ecolor', container).checked;
             const colors = $$('.color-tag', colorTagsWrap).map(tag=> tag.textContent.replace('✕','').trim()).filter(Boolean);
             const it = items.find(i=>i.id===id);
@@ -1881,12 +1891,14 @@
       const itemSubItems = subItems.filter(s=>s.itemId===it.id)
         .slice()
         .sort((a,b)=> a.name.localeCompare(b.name));
+      const hasSubs = itemSubItems.length > 0;
+      const expanded = expandedItems.has(it.id);
 
       const colorHtml = colors.length
         ? `<div class="item-color-row">${colors.map(c=>`<button class="color-btn" data-id="${it.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>`
         : '';
-      const subHtml = itemSubItems.length
-        ? `<div class="item-sub-row">${itemSubItems.map(s=>`
+      const subHtml = hasSubs
+        ? `<div class="item-sub-row" style="display:${expanded ? 'flex' : 'none'};">${itemSubItems.map(s=>`
             <button class="sub-btn" data-id="${s.id}">
               <span class="name">${escapeHtml(s.name)}</span>
               <span class="price">${fmt(s.price)}</span>
@@ -1894,11 +1906,15 @@
           `).join('')}</div>`
         : '';
 
+      const priceArea = hasSubs
+        ? `<span class="price sub-hint">${expanded ? '▾ 收合細項' : '▸ 點選查看細項'}</span>`
+        : `<span class="price">${fmt(it.price)}</span>`;
+
       return `
         <div class="item-card">
-          <button class="item-btn" data-id="${it.id}" ${colors.length ? 'disabled' : ''}>
+          <button class="item-btn" data-id="${it.id}" data-hassubs="${hasSubs}" data-hascolors="${colors.length > 0}">
             <span class="name">${escapeHtml(it.name)}</span>
-            <span class="price">${fmt(it.price)}</span>
+            ${priceArea}
           </button>
           ${colorHtml}
           ${subHtml}
@@ -1907,8 +1923,19 @@
     }).join('');
 
     $$('.item-btn', grid).forEach(b=>{
-      if(b.disabled) return;
-      b.addEventListener('click', ()=> addItemToCart(b.dataset.id));
+      const id = b.dataset.id;
+      const hasSubs = b.dataset.hassubs === 'true';
+      const hasColors = b.dataset.hascolors === 'true';
+      b.addEventListener('click', ()=>{
+        if(hasSubs){
+          if(expandedItems.has(id)) expandedItems.delete(id);
+          else expandedItems.add(id);
+          renderItemGrid();
+          return;
+        }
+        if(hasColors) return; // 只能透過顏色按鈕加入購物車
+        addItemToCart(id);
+      });
     });
     $$('.color-btn', grid).forEach(b=>{
       b.addEventListener('click', ()=> addItemToCart(b.dataset.id, b.dataset.color));

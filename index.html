@@ -1013,6 +1013,8 @@
   <main>
     <!-- 收銀 -->
     <section class="tabpanel active" id="tab-cashier">
+      <input type="text" id="cashierSearchInput" class="history-search" placeholder="🔍 快速搜尋品項名稱...">
+
       <div class="section-title">選擇分類</div>
       <div class="cat-chip-row" id="divChipRow"></div>
 
@@ -1173,6 +1175,7 @@
       </div>
 
       <div class="section-title">分類 / 類別 / 品項 / 細項（可直接修改後按儲存）</div>
+      <input type="text" id="itemSearchInput" class="history-search" placeholder="🔍 快速搜尋品項名稱...">
       <div id="divisionList"></div>
     </section>
 
@@ -1284,6 +1287,8 @@
   let transferEdited = false;
   let collapsedDivisions = new Set();  // 品項設定：收起的分類
   let expandedItems = new Set();       // 收銀：已展開細項清單的品項
+  let cashierSearchTerm = '';          // 收銀：快速搜尋關鍵字
+  let itemSettingsSearchTerm = '';     // 品項設定：快速搜尋關鍵字
   let collapsedCats = new Set();      // 品項設定：收起的類別細項清單
   let collapsedMonths = new Set();    // 訂單紀錄：收起的月份
   let collapsedDays = new Set();      // 訂單紀錄：收起的日期
@@ -1493,6 +1498,16 @@
     renderHistory();
   });
 
+  $('#cashierSearchInput').addEventListener('input', (e)=>{
+    cashierSearchTerm = e.target.value;
+    renderItemGrid();
+  });
+
+  $('#itemSearchInput').addEventListener('input', (e)=>{
+    itemSettingsSearchTerm = e.target.value;
+    renderDivisionSettings();
+  });
+
   // ---------- clock ----------
   function tickClock(){
     const d = new Date();
@@ -1508,20 +1523,23 @@
       list.innerHTML = '<div class="empty-hint">還沒有任何分類，請先在上方新增一個分類（例如：客廳、臥室）。</div>';
       return;
     }
+    const searchTerm = itemSettingsSearchTerm.trim().toLowerCase();
     const sortedDivisions = divisions.slice().sort((a,b)=> a.name.localeCompare(b.name));
-    list.innerHTML = sortedDivisions.map(div=>{
-      const divCollapsed = collapsedDivisions.has(div.id);
+    const divisionBlocks = sortedDivisions.map(div=>{
+      const divCollapsed = searchTerm ? false : collapsedDivisions.has(div.id);
       const divCats = categories.filter(c=>c.divisionId===div.id)
         .slice()
         .sort((a,b)=> a.name.localeCompare(b.name));
 
-      const catsHtml = divCats.length === 0
-        ? '<div class="empty-hint" style="padding:8px 2px;">這個分類還沒有類別。</div>'
-        : divCats.map(cat=>{
-            const catCollapsed = collapsedCats.has(cat.id);
-            const catItems = items.filter(i=>i.categoryId===cat.id)
+      const catBlocks = divCats.map(cat=>{
+            const catCollapsed = searchTerm ? false : collapsedCats.has(cat.id);
+            let catItems = items.filter(i=>i.categoryId===cat.id)
               .slice()
               .sort((a,b)=> a.name.localeCompare(b.name));
+            if(searchTerm){
+              catItems = catItems.filter(it=> it.name.toLowerCase().includes(searchTerm));
+              if(catItems.length === 0) return null;
+            }
 
             const itemsHtml = catItems.length === 0
               ? '<div class="empty-hint" style="padding:8px 2px;">這個類別還沒有品項。</div>'
@@ -1591,7 +1609,13 @@
                 <div class="cat-items" style="display:${catCollapsed ? 'none' : 'block'};">${itemsHtml}</div>
               </div>
             `;
-          }).join('');
+          }).filter(x=> x !== null);
+
+      if(searchTerm && catBlocks.length === 0) return null;
+
+      const catsHtml = catBlocks.length === 0
+        ? '<div class="empty-hint" style="padding:8px 2px;">這個分類還沒有類別。</div>'
+        : catBlocks.join('');
 
       return `
         <div class="div-card" data-divid="${div.id}">
@@ -1608,7 +1632,14 @@
           <div class="div-body" style="display:${divCollapsed ? 'none' : 'block'};">${catsHtml}</div>
         </div>
       `;
-    }).join('');
+    }).filter(x=> x !== null);
+
+    if(searchTerm && divisionBlocks.length === 0){
+      list.innerHTML = `<div class="empty-hint">找不到符合「${escapeHtml(itemSettingsSearchTerm.trim())}」的品項。</div>`;
+      return;
+    }
+
+    list.innerHTML = divisionBlocks.join('');
 
     // ---- 分類 摺疊 ----
     $$('.div-toggle', list).forEach(toggle=>{
@@ -1896,6 +1927,20 @@
   // ================= 收銀：細項 grid =================
   function renderItemGrid(){
     const grid = $('#itemGrid');
+    const searchTerm = cashierSearchTerm.trim().toLowerCase();
+
+    if(searchTerm){
+      const list = items.filter(i=> i.name.toLowerCase().includes(searchTerm))
+        .slice()
+        .sort((a,b)=> a.name.localeCompare(b.name));
+      if(list.length === 0){
+        grid.innerHTML = `<div class="empty-hint">找不到符合「${escapeHtml(cashierSearchTerm.trim())}」的品項。</div>`;
+        return;
+      }
+      renderItemCards(grid, list);
+      return;
+    }
+
     if(divisions.length === 0){
       grid.innerHTML = '<div class="empty-hint">請先到「品項設定」新增分類、類別與品項。</div>';
       return;
@@ -1911,6 +1956,10 @@
       grid.innerHTML = '<div class="empty-hint">這個類別還沒有品項，請至「品項設定」新增。</div>';
       return;
     }
+    renderItemCards(grid, list);
+  }
+
+  function renderItemCards(grid, list){
     grid.innerHTML = list.map(it=>{
       const colors = (it.colorEnabled && it.colors && it.colors.length) ? it.colors : [];
       const itemSubItems = subItems.filter(s=>s.itemId===it.id)

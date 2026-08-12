@@ -747,6 +747,7 @@
     margin-bottom:6px;
   }
   .sub-card-head .name{ font-weight:600; font-size:13px; }
+  .sub-card-hint{ font-size:11px; color:var(--ink-soft); font-weight:600; margin-bottom:6px; }
   .sub-color-btn{
     background:var(--card);
     border:1px solid var(--line);
@@ -1979,8 +1980,9 @@
                 <div class="sub-card">
                   <div class="sub-card-head">
                     <span class="name">${escapeHtml(s.name)}</span>
-                    <span class="price sub-hint">請選擇顏色</span>
+                    <span class="price">${fmt(s.price)}</span>
                   </div>
+                  <div class="sub-card-hint">請選擇顏色</div>
                   <div class="item-color-row">${colors.map(c=>`<button class="sub-color-btn" data-id="${s.id}" data-color="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}</div>
                 </div>
               `;
